@@ -1,8 +1,18 @@
 import { useState } from 'react'
-import { Center, Box, Heading, Input, Button, VStack, Text } from '@chakra-ui/react'
+import {
+  Center,
+  Box,
+  Heading,
+  Input,
+  Button,
+  VStack,
+  Text,
+} from '@chakra-ui/react'
+import { useNavigate } from 'react-router-dom'
 import { logIn } from '../auth'
 
 const LoginPage = () => {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -21,41 +31,61 @@ const LoginPage = () => {
   }
 
   return (
-    <Center>
+    <Center minH='100vh'>
       <form onSubmit={handleLogIn}>
-        <Heading mt={8} size={{ md: '5xl' }}>
-          Capstone Project
-        </Heading>
-        <Box
-          mt={{ md: '25vh' }}
-          borderWidth={1}
-          spaceY={4}
-          shadow='lg'
-          w={{ md: 450 }}
-          h={{ md: 300 }}
-          display='flex'
-          justifyContent='center'
-          alignItems='center'
-        >
-          <VStack mt={2} mb={2}>
-            <Heading>Login</Heading>
-            <Input
-              placeholder='Enter in your username or email'
-              w={{ md: 300 }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Input
-              placeholder='Enter in your password'
-              w={{ md: 300 }}
-              type='password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            {error && <Text color='red.500'>{error}</Text>}
-            <Button type='submit'>Login</Button>
-          </VStack>
-        </Box>
+        <VStack gap={6}>
+          <Heading size={{ md: '5xl' }} textAlign='center'>
+            Capstone Project
+          </Heading>
+
+          <Box
+            mt={{ md: '10vh' }}
+            borderWidth={1}
+            borderRadius='lg'
+            shadow='lg'
+            w={{ base: '90vw', md: 450 }}
+            h={{ base: 350, md: 300 }}
+            display='flex'
+            justifyContent='center'
+            alignItems='center'
+          >
+            <VStack gap={5} w='full' px={8}>
+              <Heading size='lg'>Login</Heading>
+
+              <Input
+                placeholder='Enter your username or email'
+                w='full'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+
+              <Input
+                type='password'
+                placeholder='Enter your password'
+                w='full'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              {error && <Text color='red.500'>{error}</Text>}
+
+              <Button type='submit' w='full'>
+                Login
+              </Button>
+
+              <Text>
+                Don't have an account?{' '}
+                <Button
+                  variant='subtle'
+                  size='sm'
+                  onClick={() => navigate('/signup')}
+                >
+                  Sign Up
+                </Button>
+              </Text>
+            </VStack>
+          </Box>
+        </VStack>
       </form>
     </Center>
   )
