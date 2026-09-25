@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Center,
   Box,
@@ -8,12 +9,30 @@ import {
   Text,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
+import { logIn } from '../auth'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const handleLogIn = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      const userCredential = await logIn(email, password)
+      console.log('Logged in:', userCredential.user)
+      // redirect to homepage/dashboard here
+    } catch (err) {
+      console.error(err.message)
+      setError('Incorrect email or password')
+    }
+  }
+
   return (
     <Center minH='100vh'>
-      <form>
+      <form onSubmit={handleLogIn}>
         <VStack gap={6}>
           <Heading size={{ md: '5xl' }} textAlign='center'>
             Capstone Project
@@ -33,13 +52,22 @@ const LoginPage = () => {
             <VStack gap={5} w='full' px={8}>
               <Heading size='lg'>Login</Heading>
 
-              <Input placeholder='Enter your username or email' w='full' />
+              <Input
+                placeholder='Enter your username or email'
+                w='full'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
               <Input
                 type='password'
                 placeholder='Enter your password'
                 w='full'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
+
+              {error && <Text color='red.500'>{error}</Text>}
 
               <Button type='submit' w='full'>
                 Login
