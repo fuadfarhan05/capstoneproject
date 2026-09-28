@@ -50,7 +50,6 @@ const sortOptions = [
   { label: 'Rating: highest', value: 'rating' },
 ]
 
-// shared timing so the heading, search bar and filters move together
 const layoutTransition = { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
 const sizeTransition =
   'height 0.55s cubic-bezier(0.22, 1, 0.36, 1), font-size 0.55s cubic-bezier(0.22, 1, 0.36, 1), padding 0.55s cubic-bezier(0.22, 1, 0.36, 1)'
@@ -73,15 +72,11 @@ const NotLoggedHome = () => {
     let index = 0
 
     const interval = setInterval(() => {
-      // Fade out
       setFade(false)
 
       setTimeout(() => {
-        // Change the word
         index = (index + 1) % words.length
         setActivity(words[index])
-
-        // Fade back in
         setFade(true)
       }, 500)
     }, 2000)
@@ -255,6 +250,7 @@ const NotLoggedHome = () => {
                 view={view}
                 onViewChange={setView}
                 onClearFilters={() => setFilters(emptyFilters)}
+                onRequireAuth={() => openAuth('login')}
               />
             </motion.div>
           )}

@@ -1,10 +1,9 @@
-import { Box, Flex, HStack, Heading, Text, Badge } from '@chakra-ui/react'
-import { MapPin, Star, Navigation } from 'lucide-react'
+import { Box, Flex, HStack, Heading, Text, Badge, IconButton } from '@chakra-ui/react'
+import { MapPin, Star, Navigation, Heart } from 'lucide-react'
 
 const formatPrice = (price) => (price === 0 ? 'Free' : `$${price}`)
 
-// Image placeholder: a gradient with the category pill on top
-const Cover = ({ event, ...props }) => (
+const Cover = ({ event, isSaved, onToggleSave, ...props }) => (
   <Box
     position='relative'
     flexShrink={0}
@@ -25,6 +24,24 @@ const Cover = ({ event, ...props }) => (
     >
       {event.category}
     </Badge>
+
+    <IconButton
+      aria-label={isSaved ? 'Unsave event' : 'Save event'}
+      position='absolute'
+      top={3}
+      right={3}
+      borderRadius='full'
+      size='sm'
+      bg='whiteAlpha.900'
+      color={isSaved ? 'red.500' : 'gray.700'}
+      _hover={{ bg: 'white' }}
+      onClick={(e) => {
+        e.stopPropagation()
+        onToggleSave()
+      }}
+    >
+      <Heart size={16} fill={isSaved ? 'currentColor' : 'none'} />
+    </IconButton>
   </Box>
 )
 
@@ -78,12 +95,14 @@ const cardStyles = {
   _hover: { transform: 'translateY(-4px)', shadow: 'lg' },
 }
 
-const EventCard = ({ event, view }) => {
+const EventCard = ({ event, view, isSaved, onToggleSave }) => {
   if (view === 'list') {
     return (
       <Flex {...cardStyles} direction={{ base: 'column', sm: 'row' }}>
         <Cover
           event={event}
+          isSaved={isSaved}
+          onToggleSave={onToggleSave}
           w={{ base: '100%', sm: '220px', md: '280px' }}
           h={{ base: '160px', sm: 'auto' }}
           minH={{ sm: '170px' }}
@@ -107,7 +126,12 @@ const EventCard = ({ event, view }) => {
 
   return (
     <Flex {...cardStyles} direction='column' h='100%'>
-      <Cover event={event} aspectRatio={16 / 10} />
+      <Cover
+        event={event}
+        isSaved={isSaved}
+        onToggleSave={onToggleSave}
+        aspectRatio={16 / 10}
+      />
       <Flex direction='column' gap={2} p={5} flex='1'>
         <Eyebrow event={event} />
         <Heading size='lg' lineHeight='short' lineClamp={2}>

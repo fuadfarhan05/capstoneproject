@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   Box,
   Flex,
@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from 'motion/react'
 import { LayoutList, LayoutGrid, SearchX } from 'lucide-react'
 import EventCard from './EventCard'
 import { mockEvents } from '../data/mockEvents'
+import { useAuth } from '../AuthContext'
+import { saveEvent, unsaveEvent, getSavedEvents } from '../savedEvents'
 
 const sorters = {
   'price-asc': (a, b) => a.price - b.price,
@@ -65,7 +67,40 @@ const EventResults = ({
   view,
   onViewChange,
   onClearFilters,
+  onRequireAuth,
 }) => {
+  const { user } = useAuth()
+  const [savedIds, setSavedIds] = useState(new Set())
+
+  useEffect(() => {
+    if (!user) {
+      setSavedIds(new Set())
+      return
+    }
+    getSavedEvents().then((events) => {
+      setSavedIds(new Set(events.map((e) => e.id)))
+    })
+  }, [user])
+
+  const toggleSave = async (event) => {
+    if (!user) {
+      onRequireAuth()
+      return
+    }
+    const isSaved = savedIds.has(event.id)
+    if (isSaved) {
+      await unsaveEvent(event.id)
+      setSavedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(event.id)
+        return next
+      })
+    } else {
+      await saveEvent(event)
+      setSavedIds((prev) => new Set(prev).add(event.id))
+    }
+  }
+
   const events = useMemo(() => applyFilters(mockEvents, filters), [filters])
 
   return (
@@ -79,7 +114,7 @@ const EventResults = ({
       >
         <Box>
           <Heading size='2xl' letterSpacing='tight'>
-            {query ? `Things to do near “${query}”` : 'Popular activities'}
+            {query ? `Things to do near "${query}"` : 'Popular activities'}
           </Heading>
           <Text color='fg.muted' mt={1}>
             {events.length} {events.length === 1 ? 'activity' : 'activities'}{' '}
@@ -120,7 +155,12 @@ const EventResults = ({
           >
             {events.map((event) => (
               <motion.div key={event.id} variants={item}>
-                <EventCard event={event} view={view} />
+                <EventCard
+                  event={event}
+                  view={view}
+                  isSaved={savedIds.has(event.id)}
+                  onToggleSave={() => toggleSave(event)}
+                />
               </motion.div>
             ))}
           </motion.div>
