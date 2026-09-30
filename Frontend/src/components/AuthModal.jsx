@@ -9,6 +9,7 @@ import {
   Text,
   Field,
 } from '@chakra-ui/react'
+
 import { logIn, signUp } from '../auth'
 
 // mode is 'login' or 'signup'; the parent controls it so the corner buttons
@@ -50,7 +51,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
         : await logIn(email, password)
       console.log(
         isSignUp ? 'User created:' : 'Logged in:',
-        userCredential.user,
+        userCredential.user
       )
       resetForm()
       onClose()
@@ -60,7 +61,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
       setError(
         isSignUp
           ? 'Could not create account. Email may already be in use.'
-          : 'Incorrect email or password',
+          : 'Incorrect email or password'
       )
     } finally {
       setLoading(false)
