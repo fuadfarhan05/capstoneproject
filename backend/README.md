@@ -79,7 +79,8 @@ app/
 ├── services/
 │   └── event_service.py
 └── providers/
-    └── sample_provider.py
+    ├── sample_provider.py
+    └── eventbrite_provider.py
 ```
 
 Future provider files can be added as the integrations are built:

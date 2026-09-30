@@ -7,6 +7,11 @@ SAMPLE_EVENTS = [
         "date": "2026-10-08",
         "venue": "Javits Center",
         "description": "Meet local employers and practice networking skills.",
+        "address": "429 11th Ave, New York, NY 10001",
+        "pricing": "free",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
     },
     {
         "id": 2,
@@ -16,6 +21,11 @@ SAMPLE_EVENTS = [
         "date": "2026-10-10",
         "venue": "Chicago Riverwalk",
         "description": "A guided walking tour through downtown architecture.",
+        "address": "Chicago Riverwalk, Chicago, IL 60601",
+        "pricing": "paid",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
     },
     {
         "id": 3,
@@ -25,6 +35,11 @@ SAMPLE_EVENTS = [
         "date": "2026-10-12",
         "venue": "Mission District",
         "description": "Discover local bands and evening food vendors.",
+        "address": "Mission District, San Francisco, CA 94110",
+        "pricing": "paid",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
     },
 
 ]
