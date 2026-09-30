@@ -8,4 +8,5 @@ const App = () => {
     </Routes>
   )
 }
-export default App
+
+export const useAuth = () => useContext(AuthContext)
