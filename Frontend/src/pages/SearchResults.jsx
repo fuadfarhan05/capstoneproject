@@ -16,6 +16,7 @@ import AuthModal from '../components/AuthModal'
 import FilterSelect from '../components/FilterSelect'
 import EventResults from '../components/EventResults'
 import { motion } from 'motion/react'
+import Menu from '../components/Menu'
 
 const words = [
   'a beach',
@@ -144,9 +145,11 @@ const SearchResults = () => {
 
       <VStack align='stretch' gap={5} pt={5}>
         <Flex justify='flex-start' minH={10}>
+          <Menu />
           <Heading
+            ml={4}
             asChild
-            size={{ base: 'xl', md: '2xl' }}
+            size={{ base: 'xl', md: '3xl' }}
             cursor='pointer'
             onClick={() => navigate('/')}
           >
