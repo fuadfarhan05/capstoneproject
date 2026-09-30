@@ -26,6 +26,7 @@ route -> service -> provider -> response
 ```
 
 - `main.py` creates the FastAPI app and registers route groups.
+- `app/core/config.py` reads backend configuration from environment variables.
 - `app/routes/events.py` defines the event-related HTTP endpoints.
 - `app/services/event_service.py` handles filtering, city listing, and event lookup logic.
 - `app/providers/sample_provider.py` supplies static sample event data for local testing.
@@ -74,6 +75,8 @@ Current provider-oriented structure:
 
 ```text
 app/
+├── core/
+│   └── config.py
 ├── routes/
 │   └── events.py
 ├── services/
@@ -130,6 +133,15 @@ GET /api/events?city=chicago&start_date=2026-10-08&end_date=2026-10-12&query=mus
 
 Secrets should never be committed. The backend should read provider and auth configuration from environment variables.
 
+For local development, copy the example file and fill in local values:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+The real `.env` file should stay local and is ignored by Git.
+
 ```text
 EVENTBRITE_API_TOKEN=
 TICKETMASTER_API_KEY=
@@ -139,6 +151,12 @@ ALLOWED_ORIGINS=
 ```
 
 `EVENTBRITE_API_TOKEN` is the priority for the first event integration. `TICKETMASTER_API_KEY` can remain optional until the Ticketmaster provider is implemented.
+
+Current committed example:
+
+```text
+EVENTBRITE_API_TOKEN=
+```
 
 ## Deployment
 
