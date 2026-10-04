@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from app.auth import get_current_user
 from app.routes.events import router as events_router
 #entry point for app
 
 app = FastAPI() # initialize fastapi app 
-app.include_router(events_router, prefix="/api")
+app.include_router(events_router, prefix="/api", dependencies=[Depends(get_current_user)])
 
 
 
