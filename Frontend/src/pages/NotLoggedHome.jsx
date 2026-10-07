@@ -125,7 +125,7 @@ const NotLoggedHome = () => {
 
       <VStack align='stretch' gap={8} pt={{ base: '20vh', md: '25vh' }}>
         <Flex justify='center' minH={10}>
-          <Heading size={{ base: '4xl', md: '7xl' }}>Capstone Project</Heading>
+          <Heading size={{ base: '4xl', md: '7xl' }}>Triply</Heading>
         </Flex>
 
         <form onSubmit={handleSearch}>

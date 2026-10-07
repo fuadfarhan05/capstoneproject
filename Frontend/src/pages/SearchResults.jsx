@@ -1,22 +1,18 @@
 import {
-  Flex,
-  Heading,
   Input,
   Stack,
   Button,
   VStack,
-  ButtonGroup,
   Box,
   Text,
   HStack,
 } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
 import FilterSelect from '../components/FilterSelect'
 import EventResults from '../components/EventResults'
 import { motion } from 'motion/react'
-import Menu from '../components/Menu'
 
 const words = [
   'a beach',
@@ -73,7 +69,6 @@ const sizeTransition =
 
 const SearchResults = () => {
   const location = useLocation()
-  const navigate = useNavigate()
 
   const query = location.state?.query || ''
   const initialFilters = location.state?.filters || emptyFilters
@@ -116,8 +111,6 @@ const SearchResults = () => {
       [key]: value,
     }))
 
-  const hasFilters = Object.values(filters).some(Boolean)
-
   const handleSearch = (e) => {
     e.preventDefault()
 
@@ -129,36 +122,8 @@ const SearchResults = () => {
   }
 
   return (
-    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
-      <ButtonGroup
-        position='absolute'
-        top={4}
-        right={{ base: 4, md: 12, lg: 20 }}
-        zIndex={1}
-      >
-        <Button variant='outline' onClick={() => openAuth('login')}>
-          Log in
-        </Button>
-
-        <Button onClick={() => openAuth('signup')}>Sign up</Button>
-      </ButtonGroup>
-
-      <VStack align='stretch' gap={5} pt={5}>
-        <Flex justify='flex-start' minH={10}>
-          <Menu />
-          <Heading
-            ml={4}
-            asChild
-            size={{ base: 'xl', md: '3xl' }}
-            cursor='pointer'
-            onClick={() => navigate('/')}
-          >
-            <motion.h1 layout transition={layoutTransition}>
-              Capstone Project
-            </motion.h1>
-          </Heading>
-        </Flex>
-
+    <>
+      <VStack align='stretch' gap={5}>
         <motion.div layout='position' transition={layoutTransition}>
           <form onSubmit={handleSearch}>
             <Stack direction={{ base: 'column', md: 'row' }} gap={3}>
@@ -263,7 +228,7 @@ const SearchResults = () => {
         onModeChange={setAuthMode}
         onClose={() => setAuthOpen(false)}
       />
-    </Box>
+    </>
   )
 }
 
