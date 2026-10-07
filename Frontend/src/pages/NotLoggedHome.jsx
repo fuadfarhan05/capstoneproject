@@ -1,5 +1,5 @@
 import {
-  Center,
+  Flex,
   Heading,
   Input,
   Stack,
@@ -8,12 +8,13 @@ import {
   ButtonGroup,
   Box,
   Text,
-  Portal,
-  Select,
-  createListCollection,
+  HStack,
 } from '@chakra-ui/react'
-import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import AuthModal from '../components/AuthModal'
+import FilterSelect from '../components/FilterSelect'
+
 const words = [
   'a beach',
   'a museum',
@@ -24,16 +25,51 @@ const words = [
   'a shopping mall',
   'an amusement park',
 ]
-const locations = createListCollection({
-  items: [
-    { label: 'New York City', value: 'New York City' },
-    { label: 'Chicago', value: 'Chicago' },
-    { label: 'San Francisco', value: 'San Francisco' },
-  ],
-})
+
+const cityOptions = [
+  { label: 'New York City', value: 'new-york-city' },
+  { label: 'Chicago', value: 'chicago' },
+  { label: 'San Francisco', value: 'san-francisco' },
+]
+
+const distanceOptions = [
+  { label: 'Within 1 mile', value: '1' },
+  { label: 'Within 5 miles', value: '5' },
+  { label: 'Within 10 miles', value: '10' },
+  { label: 'Within 25 miles', value: '25' },
+]
+
+const priceOptions = [
+  { label: '$', value: '1' },
+  { label: '$$', value: '2' },
+  { label: '$$$', value: '3' },
+  { label: '$$$$', value: '4' },
+]
+
+const sortOptions = [
+  { label: 'Price: low to high', value: 'price-asc' },
+  { label: 'Price: high to low', value: 'price-desc' },
+  { label: 'Distance: nearest', value: 'distance' },
+  { label: 'Rating: highest', value: 'rating' },
+]
+
+const emptyFilters = {
+  city: '',
+  distance: '',
+  price: '',
+  sort: '',
+}
 
 const NotLoggedHome = () => {
   const navigate = useNavigate()
+
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authMode, setAuthMode] = useState('signup')
+
+  const openAuth = (mode) => {
+    setAuthMode(mode)
+    setAuthOpen(true)
+  }
 
   const [activity, setActivity] = useState('a beach')
   const [fade, setFade] = useState(true)
@@ -42,51 +78,77 @@ const NotLoggedHome = () => {
     let index = 0
 
     const interval = setInterval(() => {
-      // Fade out
       setFade(false)
 
       setTimeout(() => {
-        // Change the word
         index = (index + 1) % words.length
         setActivity(words[index])
-
-        // Fade back in
         setFade(true)
       }, 500)
     }, 2000)
 
     return () => clearInterval(interval)
   }, [])
+
   const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState(emptyFilters)
+
+  const setFilter = (key) => (value) =>
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
+
+  const handleSearch = () => {
+    navigate('/search', {
+      state: {
+        query: search,
+        filters: filters,
+      },
+    })
+  }
+
   return (
-    <Center>
-      <Box width='100%'>
-        <ButtonGroup
-          mt={{ md: 2 }}
-          mr={{ md: 4 }}
-          display='flex'
-          justifyContent='flex-end'
-        >
-          <Button onClick={() => navigate('/login')}>Login</Button>
-          <Button variant='surface' onClick={() => navigate('/signup')}>
-            Sign up
-          </Button>
-        </ButtonGroup>
-        <VStack mt={{ md: '25vh' }}>
-          <Heading size={{ md: '7xl' }}>Capstone Project</Heading>
-          <Stack spaceY='2'>
-            <Box position='relative' width={{ md: 550 }}>
+    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
+      <ButtonGroup
+        position='absolute'
+        top={4}
+        right={{ base: 4, md: 12, lg: 20 }}
+        zIndex={1}
+      >
+        <Button variant='outline' onClick={() => openAuth('login')}>
+          Log in
+        </Button>
+
+        <Button onClick={() => openAuth('signup')}>Sign up</Button>
+      </ButtonGroup>
+
+      <VStack align='stretch' gap={8} pt={{ base: '20vh', md: '25vh' }}>
+        <Flex justify='center' minH={10}>
+          <Heading size={{ base: '4xl', md: '7xl' }}>Capstone Project</Heading>
+        </Flex>
+
+        <form onSubmit={handleSearch}>
+          <Stack direction={{ base: 'column', md: 'row' }} gap={3}>
+            <Box position='relative' flex='1'>
               <Input
+                size='2xl'
                 width='100%'
+                borderRadius='full'
+                px={6}
+                fontSize='lg'
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label='Search for activities'
               />
+
               {search === '' && (
                 <Text
                   position='absolute'
-                  left='12px'
+                  left='24px'
                   top='50%'
                   transform='translateY(-50%)'
+                  fontSize='lg'
                   color='gray.500'
                   pointerEvents='none'
                 >
@@ -101,35 +163,58 @@ const NotLoggedHome = () => {
                 </Text>
               )}
             </Box>
-            <Select.Root collection={locations} size='sm' width='320px'>
-              <Select.HiddenSelect />
-              <Select.Label>Select a city</Select.Label>
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText placeholder='Select a city' />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Portal>
-                <Select.Positioner>
-                  <Select.Content>
-                    {locations.items.map((framework) => (
-                      <Select.Item item={framework} key={framework.value}>
-                        {framework.label}
-                        <Select.ItemIndicator />
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select.Positioner>
-              </Portal>
-            </Select.Root>
-            <Button width={{ md: 100 }}>Find Activities</Button>
+
+            <Button type='submit' size='2xl' px={10} fontSize='lg'>
+              Find Activities
+            </Button>
           </Stack>
-        </VStack>
-      </Box>
-    </Center>
+        </form>
+
+        <HStack gap={3} wrap='wrap'>
+          <Text color='fg.muted' fontWeight='medium'>
+            Filters:
+          </Text>
+
+          <FilterSelect
+            label='City'
+            options={cityOptions}
+            value={filters.city}
+            onChange={setFilter('city')}
+          />
+
+          <FilterSelect
+            label='Distance'
+            options={distanceOptions}
+            value={filters.distance}
+            onChange={setFilter('distance')}
+          />
+
+          <FilterSelect
+            label='Price'
+            options={priceOptions}
+            value={filters.price}
+            onChange={setFilter('price')}
+            width='140px'
+          />
+
+          <FilterSelect
+            label='Sort by'
+            options={sortOptions}
+            value={filters.sort}
+            onChange={setFilter('sort')}
+            width='210px'
+          />
+        </HStack>
+      </VStack>
+
+      <AuthModal
+        open={authOpen}
+        mode={authMode}
+        onModeChange={setAuthMode}
+        onClose={() => setAuthOpen(false)}
+      />
+    </Box>
   )
 }
+
 export default NotLoggedHome

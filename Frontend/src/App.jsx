@@ -1,11 +1,10 @@
 import { Routes, Route } from 'react-router-dom'
-import { NotLoggedHome, LoginPage, SignUpPage } from './pages/index'
+import { NotLoggedHome, SearchResults } from './pages/index'
 const App = () => {
   return (
     <Routes>
       <Route index path='/' element={<NotLoggedHome />} />
-      <Route path='login' element={<LoginPage />} />
-      <Route path='signup' element={<SignUpPage />} />
+      <Route path='/search' element={<SearchResults />} />
     </Routes>
   )
 }
