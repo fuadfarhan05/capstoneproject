@@ -43,7 +43,7 @@ const Navbar = () => {
             onClick={() => navigate('/')}
           >
             <motion.h1 layout transition={layoutTransition}>
-              Capstone Project
+              Triply
             </motion.h1>
           </Heading>
         </Flex>

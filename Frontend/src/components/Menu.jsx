@@ -44,7 +44,10 @@ const Menu = () => {
                 <Button
                   variant='ghost'
                   justifyContent='flex-start'
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false)
+                    navigate('/search')
+                  }}
                 >
                   Explore Activities
                 </Button>
