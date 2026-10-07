@@ -28,6 +28,7 @@ route -> service -> provider -> response
 - `main.py` creates the FastAPI app and registers route groups.
 - `app/core/config.py` reads backend configuration from environment variables.
 - `app/routes/events.py` defines the event-related HTTP endpoints.
+- `app/routes/health.py` defines a small status endpoint for local checks and deployment checks.
 - `app/services/event_service.py` handles filtering, city listing, and event lookup logic.
 - `app/providers/sample_provider.py` supplies static sample event data for local testing.
 

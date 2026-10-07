@@ -4,7 +4,7 @@ from app.models.event import Event, EventListResponse
 from app.models.city import CityListResponse
 
 
-router = APIRouter()
+router = APIRouter(tags=["events"])
 
 
 @router.get("/events", response_model=EventListResponse)
