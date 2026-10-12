@@ -1,0 +1,232 @@
+import {
+  VStack,
+  Box,
+  Heading,
+  Text,
+  Grid,
+  GridItem,
+  Input,
+  Button,
+  Dialog,
+  SimpleGrid,
+} from '@chakra-ui/react'
+import { useState } from 'react'
+import {
+  Destinations,
+  TravelDate,
+  ReturnDate,
+  Friends,
+} from '../components/index'
+
+const Groups = () => {
+  const [plans, setPlans] = useState([])
+  const [planName, setPlanName] = useState('')
+  const [destination, setDestination] = useState('')
+  const [travelDate, setTravelDate] = useState('')
+  const [returnDate, setReturnDate] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [friends, setFriends] = useState([])
+
+  const createPlan = () => {
+    if (!planName.trim() || !destination || !travelDate || !returnDate) {
+      return
+    }
+
+    const newPlan = {
+      id: Date.now(),
+      name: planName.trim(),
+      destination,
+      travelDate,
+      returnDate,
+      friends: [],
+      activities: [],
+    }
+
+    setPlans((currentPlans) => [...currentPlans, newPlan])
+
+    setPlanName('')
+    setDestination('')
+    setTravelDate('')
+    setReturnDate('')
+  }
+
+  return (
+    <>
+      <VStack align={'stretch'}>
+        {/* Heading */}
+        <Box>
+          <Heading size={{ base: 'xl', md: '2xl' }}>Group plans</Heading>
+          <Text color='grey'>Plan activities and trips with your friends.</Text>
+        </Box>
+
+        {/* Search bar */}
+        <form>
+          <Text>Make a Plan</Text>
+          <Grid
+            spaceY={4}
+            templateColumns='repeat(5, 1fr)'
+            gap='6'
+            alignItems='end'
+          >
+            <GridItem colSpan={1} spaceY={2}>
+              <Heading>Trip Name </Heading>
+              <Input
+                placeholder='Example: NYC Weekend'
+                value={planName}
+                onChange={(e) => setPlanName(e.target.value)}
+                borderRadius={'full'}
+              />
+            </GridItem>
+
+            <GridItem colSpan={1} spaceY={2}>
+              <Destinations value={destination} onChange={setDestination} />
+            </GridItem>
+
+            <GridItem colSpan={1} spaceY={2}>
+              <TravelDate value={travelDate} onChange={setTravelDate} />
+            </GridItem>
+
+            <GridItem colSpan={1} spaceY={2}>
+              <ReturnDate value={returnDate} onChange={setReturnDate} />
+            </GridItem>
+
+            <GridItem colSpan={1} spaceY={2}>
+              <Button width={{ md: 100 }} onClick={createPlan}>
+                Create Plan
+              </Button>
+            </GridItem>
+          </Grid>
+        </form>
+        <Box>
+          {plans.length > 0 ? (
+            <SimpleGrid columns={{ base: 2, md: 4 }} gap={5}>
+              {plans.map((plan) => (
+                <Box
+                  key={plan.id}
+                  borderWidth='1px'
+                  borderRadius='lg'
+                  p={5}
+                  cursor='pointer'
+                  transition='all 0.2s'
+                  _hover={{
+                    transform: 'translateY(-2px)',
+                    boxShadow: 'md',
+                  }}
+                  onClick={() => setSelectedPlan(plan)}
+                  w={300}
+                >
+                  <VStack align='stretch' gap={3}>
+                    <Heading size='md'>{plan.name}</Heading>
+                    <Text>Destination: {plan.destination}</Text>
+                    <Text>Travel Date: {String(plan.travelDate)}</Text>
+                    <Text>Return Date: {String(plan.returnDate)}</Text>
+                  </VStack>
+                </Box>
+              ))}
+            </SimpleGrid>
+          ) : (
+            <Box borderWidth='1px' borderRadius='lg' p={8} textAlign='center'>
+              <Text color='gray.500'>Your plans will appear here.</Text>
+            </Box>
+          )}
+        </Box>
+      </VStack>
+
+      <Dialog.Root
+        open={selectedPlan !== null}
+        onOpenChange={(e) => {
+          if (!e.open) {
+            setSelectedPlan(null)
+          }
+        }}
+      >
+        <Dialog.Backdrop />
+
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>{selectedPlan?.name}</Dialog.Title>
+            </Dialog.Header>
+
+            <Dialog.Body>
+              {selectedPlan && (
+                <VStack align='stretch' gap={5}>
+                  <SimpleGrid columns={{ base: 2, md: 2 }} gap={5}>
+                    <Box>
+                      <Text fontSize='sm' fontWeight='medium'>
+                        Destination
+                      </Text>
+
+                      <Text color='gray.500'>{selectedPlan.destination}</Text>
+                    </Box>
+
+                    <Box>
+                      <Text fontSize='sm' fontWeight='medium'>
+                        Travel Date
+                      </Text>
+                      <Text color='gray.500'>
+                        {String(selectedPlan.travelDate)}
+                      </Text>
+                    </Box>
+
+                    <Box>
+                      <Text fontSize='sm' fontWeight='medium'>
+                        Return Date
+                      </Text>
+                      <Text color='gray.500'>
+                        {String(selectedPlan.returnDate)}
+                      </Text>
+                    </Box>
+
+                    <Box>
+                      <Text fontSize='sm' fontWeight='medium'>
+                        Friends
+                      </Text>
+                      <Text color='gray.500'>
+                        {String(selectedPlan.friends)}
+                      </Text>
+                    </Box>
+                  </SimpleGrid>
+
+                  <Box>
+                    <Text fontSize='sm' fontWeight='medium' mb={3}>
+                      Activities
+                    </Text>
+
+                    <Box
+                      borderWidth='1px'
+                      borderRadius='md'
+                      p={5}
+                      textAlign='center'
+                    >
+                      <Text color='gray.500'>No activities added yet.</Text>
+
+                      <Text color='gray.400' fontSize='sm' mt={1}>
+                        Activities will appear here.
+                      </Text>
+                    </Box>
+                  </Box>
+                </VStack>
+              )}
+            </Dialog.Body>
+
+            <Dialog.Footer>
+              <Button variant='outline' onClick={() => setSelectedPlan(null)}>
+                Edit
+              </Button>
+              <Button variant='outline' onClick={() => setSelectedPlan(null)}>
+                Add Friends
+              </Button>
+              <Button variant='outline' onClick={() => setSelectedPlan(null)}>
+                Close
+              </Button>
+            </Dialog.Footer>
+
+            <Dialog.CloseTrigger />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
+    </>
+  )
+}
+export default Groups

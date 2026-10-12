@@ -65,7 +65,7 @@ const Menu = () => {
                   justifyContent='flex-start'
                   onClick={() => {
                     setOpen(false)
-                    navigate('/group-plans')
+                    navigate('/groups')
                   }}
                 >
                   Group Plans
