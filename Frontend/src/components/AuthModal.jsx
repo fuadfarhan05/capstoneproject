@@ -12,6 +12,20 @@ import {
 
 import { logIn, signUp } from '../auth'
 
+// Firebase error codes -> messages a user can act on
+const authErrorMessages = {
+  'auth/invalid-credential': 'Incorrect email or password',
+  'auth/invalid-email': 'Please enter a valid email address',
+  'auth/user-disabled': 'This account has been disabled',
+  'auth/email-already-in-use':
+    'An account with this email already exists. Try logging in instead.',
+  'auth/weak-password': 'Password must be at least 6 characters',
+  'auth/too-many-requests':
+    'Too many attempts. Please wait a minute and try again.',
+  'auth/network-request-failed':
+    'Could not reach the server. Check your internet connection.',
+}
+
 // mode is 'login' or 'signup'; the parent controls it so the corner buttons
 // and "Find Activities" can open the modal on the right form
 const AuthModal = ({ open, mode, onModeChange, onClose }) => {
@@ -57,11 +71,12 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
       onClose()
       // redirect to homepage/dashboard here
     } catch (err) {
-      console.error(err.message)
+      console.error(err.code, err.message)
       setError(
-        isSignUp
-          ? 'Could not create account. Email may already be in use.'
-          : 'Incorrect email or password'
+        authErrorMessages[err.code] ??
+          (isSignUp
+            ? 'Could not create your account. Please try again.'
+            : 'Could not log in. Please try again.')
       )
     } finally {
       setLoading(false)
