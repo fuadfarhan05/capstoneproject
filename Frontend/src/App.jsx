@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { NotLoggedHome, SearchResults, GroupPlans } from './pages/index'
+import { NotLoggedHome, SearchResults, Groups } from './pages/index'
 import { NavBar } from './components/index'
 
 const App = () => {
@@ -9,7 +9,7 @@ const App = () => {
 
       <Route element={<NavBar />}>
         <Route path='/search' element={<SearchResults />} />
-        <Route path='/group-plans' element={<GroupPlans />} />
+        <Route path='/groups' element={<Groups />} />
       </Route>
     </Routes>
   )

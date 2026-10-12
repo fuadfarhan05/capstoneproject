@@ -1,1 +1,5 @@
 export { default as NavBar } from './Navbar'
+export { default as Destinations } from './Destinations'
+export { default as TravelDate } from './TravelDate'
+export { default as ReturnDate } from './ReturnDate'
+export { default as Friends } from './Friends'
