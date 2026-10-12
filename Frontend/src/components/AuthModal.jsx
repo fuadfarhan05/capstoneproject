@@ -11,8 +11,8 @@ import {
 } from '@chakra-ui/react'
 import { logIn, signUp } from '../auth'
 
-// mode is 'login' or 'signup'; the parent controls it so the corner buttons
-// and "Find Activities" can open the modal on the right form
+// mode is 'login' or 'signup'; AuthProvider controls it so any button in the
+// app can open the modal on the right form
 const AuthModal = ({ open, mode, onModeChange, onClose }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -5,13 +5,12 @@ import {
   Stack,
   Button,
   VStack,
-  ButtonGroup,
   Box,
   Text,
   HStack,
 } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import AuthModal from '../components/AuthModal'
+import AccountButtons from '../components/AccountButtons'
 import FilterSelect from '../components/FilterSelect'
 import EventResults from '../components/EventResults'
 import { motion, AnimatePresence } from 'motion/react'
@@ -58,14 +57,6 @@ const sizeTransition =
 const emptyFilters = { city: '', distance: '', price: '', sort: '' }
 
 const NotLoggedHome = () => {
-  const [authOpen, setAuthOpen] = useState(false)
-  const [authMode, setAuthMode] = useState('signup')
-
-  const openAuth = (mode) => {
-    setAuthMode(mode)
-    setAuthOpen(true)
-  }
-
   const [activity, setActivity] = useState('a beach')
   const [fade, setFade] = useState(true)
 
@@ -111,17 +102,14 @@ const NotLoggedHome = () => {
 
   return (
     <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
-      <ButtonGroup
+      <Box
         position='absolute'
         top={4}
         right={{ base: 4, md: 12, lg: 20 }}
         zIndex={1}
       >
-        <Button variant='outline' onClick={() => openAuth('login')}>
-          Log in
-        </Button>
-        <Button onClick={() => openAuth('signup')}>Sign up</Button>
-      </ButtonGroup>
+        <AccountButtons />
+      </Box>
 
       <VStack
         align='stretch'
@@ -260,13 +248,6 @@ const NotLoggedHome = () => {
           )}
         </AnimatePresence>
       </VStack>
-
-      <AuthModal
-        open={authOpen}
-        mode={authMode}
-        onModeChange={setAuthMode}
-        onClose={() => setAuthOpen(false)}
-      />
     </Box>
   )
 }

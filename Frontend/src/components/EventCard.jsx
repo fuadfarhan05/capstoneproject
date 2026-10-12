@@ -1,5 +1,6 @@
 import { Box, Flex, HStack, Heading, Text, Badge } from '@chakra-ui/react'
 import { MapPin, Star, Navigation } from 'lucide-react'
+import SaveButton from './SaveButton'
 
 const formatPrice = (price) => (price === 0 ? 'Free' : `$${price}`)
 
@@ -25,6 +26,7 @@ const Cover = ({ event, ...props }) => (
     >
       {event.category}
     </Badge>
+    <SaveButton event={event} position='absolute' top={2.5} right={2.5} />
   </Box>
 )
 
