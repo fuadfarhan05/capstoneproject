@@ -65,6 +65,7 @@ const EventResults = ({
   view,
   onViewChange,
   onClearFilters,
+  onRequireAuth,
 }) => {
   const events = useMemo(() => applyFilters(mockEvents, filters), [filters])
 
@@ -120,7 +121,11 @@ const EventResults = ({
           >
             {events.map((event) => (
               <motion.div key={event.id} variants={item}>
-                <EventCard event={event} view={view} />
+                <EventCard
+                  event={event}
+                  view={view}
+                  onRequireAuth={onRequireAuth}
+                />
               </motion.div>
             ))}
           </motion.div>

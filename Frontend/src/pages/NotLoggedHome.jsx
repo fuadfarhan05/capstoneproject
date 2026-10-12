@@ -5,7 +5,6 @@ import {
   Stack,
   Button,
   VStack,
-  ButtonGroup,
   Box,
   Text,
   HStack,
@@ -13,6 +12,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
+import AccountButtons from '../components/AccountButtons'
 import FilterSelect from '../components/FilterSelect'
 
 const words = [
@@ -110,18 +110,14 @@ const NotLoggedHome = () => {
 
   return (
     <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
-      <ButtonGroup
+      <Box
         position='absolute'
         top={4}
         right={{ base: 4, md: 12, lg: 20 }}
         zIndex={1}
       >
-        <Button variant='outline' onClick={() => openAuth('login')}>
-          Log in
-        </Button>
-
-        <Button onClick={() => openAuth('signup')}>Sign up</Button>
-      </ButtonGroup>
+        <AccountButtons onOpenAuth={openAuth} />
+      </Box>
 
       <VStack align='stretch' gap={8} pt={{ base: '20vh', md: '25vh' }}>
         <Flex justify='center' minH={10}>

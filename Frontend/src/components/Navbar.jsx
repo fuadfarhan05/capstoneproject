@@ -1,7 +1,5 @@
 import {
   Box,
-  ButtonGroup,
-  Button,
   Flex,
   Heading,
   VStack,
@@ -10,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import Menu from './Menu'
 import AuthModal from '../components/AuthModal'
+import AccountButtons from './AccountButtons'
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 
@@ -48,18 +47,14 @@ const Navbar = () => {
           </Heading>
         </Flex>
 
-        <ButtonGroup
+        <Box
           position='absolute'
           top={4}
           right={{ base: 4, md: 12, lg: 20 }}
           zIndex={1}
         >
-          <Button variant='outline' onClick={() => openAuth('login')}>
-            Log in
-          </Button>
-
-          <Button onClick={() => openAuth('signup')}>Sign up</Button>
-        </ButtonGroup>
+          <AccountButtons onOpenAuth={openAuth} />
+        </Box>
 
         <AuthModal
           open={authOpen}
