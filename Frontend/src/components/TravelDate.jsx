@@ -1,14 +1,14 @@
 import { DatePicker, Portal, Heading } from '@chakra-ui/react'
 import { LuCalendar } from 'react-icons/lu'
 
-const TravelDate = ({ value, onChange }) => {
+const TravelDate = ({ value, onChange, edit }) => {
   return (
     <DatePicker.Root
-      maxWidth='20rem'
+      maxWidth={edit ? '10rem' : '20rem'}
       value={value ? [value] : []}
       onValueChange={(details) => onChange(details.value[0] || '')}
     >
-      <Heading>Travel Date</Heading>
+      {!edit && <Heading>Travel Date</Heading>}
       <DatePicker.Control>
         <DatePicker.Input borderRadius='full' />
         <DatePicker.IndicatorGroup>

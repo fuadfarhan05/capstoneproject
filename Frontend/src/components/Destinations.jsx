@@ -8,17 +8,17 @@ const location = createListCollection({
   ],
 })
 
-const Destinations = ({ value, onChange }) => {
+const Destinations = ({ value, onChange, edit }) => {
   return (
     <Select.Root
       collection={location}
       value={value ? [value] : []}
       onValueChange={(details) => onChange(details.value[0] || '')}
-      size='md'
-      width='300px'
+      size={edit ? 'sm' : 'md'}
+      width={edit ? '150px' : '300px'}
     >
       <Select.HiddenSelect />
-      <Heading>Destination</Heading>
+      {!edit && <Heading>Destination</Heading>}
       <Select.Control>
         <Select.Trigger borderRadius={'full'}>
           <Select.ValueText placeholder='Where are we going?' />
