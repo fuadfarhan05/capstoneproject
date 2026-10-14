@@ -141,7 +141,9 @@ cd backend
 cp .env.example .env
 ```
 
-The real `.env` file should stay local and is ignored by Git.
+The backend loads this file automatically when it starts. Existing shell or
+deployment environment variables take priority over values in `.env`. The real
+`.env` file should stay local and is ignored by Git.
 
 ```text
 EVENTBRITE_API_TOKEN=
@@ -157,6 +159,7 @@ Current committed example:
 
 ```text
 EVENTBRITE_API_TOKEN=
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 ## Deployment

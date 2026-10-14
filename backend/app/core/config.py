@@ -1,4 +1,19 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+
+BACKEND_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+def load_backend_environment(
+    env_file: str | Path = BACKEND_ENV_FILE,
+) -> bool:
+    return load_dotenv(dotenv_path=env_file, override=False)
+
+
+load_backend_environment()
 
 
 def get_allowed_origins() -> list[str]:
@@ -14,10 +29,8 @@ def get_allowed_origins() -> list[str]:
     ]
 
 class Settings:
-    #makes this a reusable token by other classes
     eventbrite_api_token: str | None = os.getenv("EVENTBRITE_API_TOKEN")
     allowed_origins: list[str] = get_allowed_origins()
-
 
 
 settings = Settings()
