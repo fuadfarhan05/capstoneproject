@@ -1,3 +1,6 @@
+import httpx
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -144,5 +147,59 @@ def test_eventbrite_invalid_start_date_returns_400():
             response.json()["detail"]
             == "start_date must use YYYY-MM-DD format"
         )
+    finally:
+        settings.eventbrite_api_token = original_token
+
+
+def test_eventbrite_timeout_returns_504():
+    original_token = settings.eventbrite_api_token
+    settings.eventbrite_api_token = "fake-token"
+
+    eventbrite_request = httpx.Request(
+        "GET",
+        "https://www.eventbriteapi.com/v3/events/search/",
+    )
+
+    try:
+        with patch(
+            "app.providers.eventbrite_provider.httpx.get",
+            side_effect=httpx.TimeoutException(
+                "Eventbrite timed out",
+                request=eventbrite_request,
+            ),
+        ):
+            response = client.get("/api/events?source=eventbrite")
+
+        assert response.status_code == 504
+        assert response.json() == {
+            "detail": "Eventbrite request timed out"
+        }
+    finally:
+        settings.eventbrite_api_token = original_token
+
+
+def test_eventbrite_connection_error_returns_502():
+    original_token = settings.eventbrite_api_token
+    settings.eventbrite_api_token = "fake-token"
+
+    eventbrite_request = httpx.Request(
+        "GET",
+        "https://www.eventbriteapi.com/v3/events/search/",
+    )
+
+    try:
+        with patch(
+            "app.providers.eventbrite_provider.httpx.get",
+            side_effect=httpx.ConnectError(
+                "Could not connect to Eventbrite",
+                request=eventbrite_request,
+            ),
+        ):
+            response = client.get("/api/events?source=eventbrite")
+
+        assert response.status_code == 502
+        assert response.json() == {
+            "detail": "Eventbrite request failed"
+        }
     finally:
         settings.eventbrite_api_token = original_token

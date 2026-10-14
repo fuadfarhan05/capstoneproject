@@ -3,6 +3,8 @@ from fastapi import HTTPException
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
+    EventbriteRequestError,
+    EventbriteTimeoutError,
     get_eventbrite_events,
 )
 
@@ -75,6 +77,16 @@ def filter_events(
             raise HTTPException(
                 status_code=503,
                 detail="Eventbrite is not configured",
+            ) from exc
+        except EventbriteTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Eventbrite request timed out",
+            ) from exc
+        except EventbriteRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Eventbrite request failed",
             ) from exc
 
     filtered_events = get_sample_events()
