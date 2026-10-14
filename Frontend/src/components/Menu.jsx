@@ -55,7 +55,9 @@ const Menu = () => {
                 <Button
                   variant='ghost'
                   justifyContent='flex-start'
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    navigate('/saved-activies'), setOpen(false)
+                  }}
                 >
                   Saved Activities
                 </Button>
