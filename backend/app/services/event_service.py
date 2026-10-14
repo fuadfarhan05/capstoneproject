@@ -35,7 +35,34 @@ def filter_events(
     end_date: str | None = None,
     source: str = "sample",
 ):
-    if source == 'eventbrite': #CHECKS if eventbrite data is passed through
+    if source not in {"sample", "eventbrite"}:
+        raise HTTPException(
+            status_code=400,
+            detail="source must be either 'sample' or 'eventbrite'",
+        )
+
+    parsed_start_date = (
+        _parse_date(start_date, "start_date")
+        if start_date
+        else None
+    )
+    parsed_end_date = (
+        _parse_date(end_date, "end_date")
+        if end_date
+        else None
+    )
+
+    if (
+        parsed_start_date
+        and parsed_end_date
+        and parsed_start_date > parsed_end_date
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="start_date must be before or equal to end_date",
+        )
+
+    if source == "eventbrite":
         try:
             return get_eventbrite_events(
                 city=city,
@@ -50,22 +77,7 @@ def filter_events(
                 detail="Eventbrite is not configured",
             ) from exc
 
-    if source != "sample":
-        raise HTTPException(
-            status_code=400,
-            detail="source must be either 'sample' or 'eventbrite'",
-        )
-
-
     filtered_events = get_sample_events()
-    parsed_start_date = _parse_date(start_date, "start_date") if start_date else None
-    parsed_end_date = _parse_date(end_date, "end_date") if end_date else None
-
-    if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
-        raise HTTPException(
-            status_code=400,
-            detail="start_date must be before or equal to end_date",
-        )
 
     if city:
         filtered_events = [

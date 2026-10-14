@@ -129,3 +129,20 @@ def test_events_eventbrite_source_requires_token():
         assert response.json() == {"detail": "Eventbrite is not configured"}
     finally:
         settings.eventbrite_api_token = original_token
+
+def test_eventbrite_invalid_start_date_returns_400():
+    original_token = settings.eventbrite_api_token
+    settings.eventbrite_api_token = None
+
+    try:
+        response = client.get(
+            "/api/events?source=eventbrite&start_date=bad-date"
+        )
+
+        assert response.status_code == 400
+        assert (
+            response.json()["detail"]
+            == "start_date must use YYYY-MM-DD format"
+        )
+    finally:
+        settings.eventbrite_api_token = original_token
