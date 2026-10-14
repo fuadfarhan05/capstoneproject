@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from main import app
 
 client = TestClient(app)
@@ -19,6 +20,26 @@ def test_list_events_returns_events():
     data = response.json()
     assert "events" in data
     assert len(data["events"]) > 0
+
+
+def test_events_default_source_uses_sample_data():
+    response = client.get("/api/events")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data["events"]) > 0
+    assert all(event["source"] == "sample" for event in data["events"])
+
+
+def test_events_sample_source_uses_sample_data():
+    response = client.get("/api/events?source=sample")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data["events"]) > 0
+    assert all(event["source"] == "sample" for event in data["events"])
 
 
 def test_event_by_id():
@@ -88,3 +109,23 @@ def test_invalid_date_range_returns_400():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "start_date must be before or equal to end_date"
+
+
+def test_events_invalid_source_returns_400():
+    response = client.get("/api/events?source=random")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "source must be either 'sample' or 'eventbrite'"
+
+
+def test_events_eventbrite_source_requires_token():
+    original_token = settings.eventbrite_api_token
+    settings.eventbrite_api_token = None
+
+    try:
+        response = client.get("/api/events?source=eventbrite")
+
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Eventbrite is not configured"}
+    finally:
+        settings.eventbrite_api_token = original_token

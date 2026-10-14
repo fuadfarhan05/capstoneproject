@@ -1,8 +1,10 @@
 from datetime import date
-
 from fastapi import HTTPException
-
 from app.providers.sample_provider import get_sample_events
+from app.providers.eventbrite_provider import (
+    EventbriteConfigurationError,
+    get_eventbrite_events,
+)
 
 # Backend logic: filtering, finding events, and listing supported cities.
 
@@ -31,7 +33,30 @@ def filter_events(
     query: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
+    source: str = "sample",
 ):
+    if source == 'eventbrite': #CHECKS if eventbrite data is passed through
+        try:
+            return get_eventbrite_events(
+                city=city,
+                category=category,
+                query=query,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except EventbriteConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Eventbrite is not configured",
+            ) from exc
+
+    if source != "sample":
+        raise HTTPException(
+            status_code=400,
+            detail="source must be either 'sample' or 'eventbrite'",
+        )
+
+
     filtered_events = get_sample_events()
     parsed_start_date = _parse_date(start_date, "start_date") if start_date else None
     parsed_end_date = _parse_date(end_date, "end_date") if end_date else None

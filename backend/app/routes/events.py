@@ -14,6 +14,7 @@ def list_events(
     query: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
+    source: str = "sample",
 ):
     return {
         "events": filter_events(
@@ -22,6 +23,7 @@ def list_events(
             query=query,
             start_date=start_date,
             end_date=end_date,
+            source=source,
         )
     }
 
