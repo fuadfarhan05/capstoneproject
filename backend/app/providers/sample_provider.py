@@ -16,8 +16,8 @@ SAMPLE_EVENTS = [
     {
         "id": 2,
         "title": "Chicago Architecture Walk",
-        "city": "Chicago",
         "category": "tour",
+        "city": "Chicago",
         "date": "2026-10-10",
         "venue": "Chicago Riverwalk",
         "description": "A guided walking tour through downtown architecture.",
@@ -30,8 +30,8 @@ SAMPLE_EVENTS = [
     {
         "id": 3,
         "title": "San Francisco Music Night",
-        "city": "San Francisco",
         "category": "music",
+        "city": "San Francisco",
         "date": "2026-10-12",
         "venue": "Mission District",
         "description": "Discover local bands and evening food vendors.",
@@ -41,8 +41,50 @@ SAMPLE_EVENTS = [
         "photos": [],
         "source": "sample",
     },
-
+    {
+        "id": 4,
+        "title": "NYC Food Truck Crawl",
+        "category": "food",
+        "city": "New York City",
+        "date": "2026-10-15",
+        "venue": "Bryant Park",
+        "description": "Try local bites from rotating food trucks near Midtown.",
+        "address": "Bryant Park, New York, NY 10018",
+        "pricing": "paid",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
+    },
+    {
+        "id": 5,
+        "title": "Chicago Startup Mixer",
+        "category": "networking",
+        "city": "Chicago",
+        "date": "2026-10-18",
+        "venue": "1871",
+        "description": "Meet founders, students, and local tech professionals.",
+        "address": "222 W Merchandise Mart Plaza, Chicago, IL 60654",
+        "pricing": "free",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
+    },
+    {
+        "id": 6,
+        "title": "San Francisco Golden Gate Photo Walk",
+        "category": "outdoors",
+        "city": "San Francisco",
+        "date": "2026-10-20",
+        "venue": "Golden Gate Bridge Welcome Center",
+        "description": "A beginner-friendly photo walk around scenic bridge viewpoints.",
+        "address": "Golden Gate Bridge Welcome Center, San Francisco, CA 94129",
+        "pricing": "free",
+        "ticket_link": "https://www.eventbrite.com/",
+        "photos": [],
+        "source": "sample",
+    },
 ]
 
+
 def get_sample_events():
-    return SAMPLE_EVENTS
+    return [event.copy() for event in SAMPLE_EVENTS]

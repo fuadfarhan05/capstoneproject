@@ -1,27 +1,15 @@
 from fastapi import Depends, FastAPI
 from app.auth import get_current_user
 from app.routes.events import router as events_router
-#entry point for app
+from app.routes.health import router as health_router
 
-app = FastAPI() # initialize fastapi app 
+# Entry point for the API. This file creates the FastAPI app and attaches route groups.
+app = FastAPI(title="Travel Activity Discovery API")
+app.include_router(health_router)
+# Every /api route requires a valid Firebase token. /health stays public.
 app.include_router(events_router, prefix="/api", dependencies=[Depends(get_current_user)])
-
-
 
 
 @app.get("/")
 async def root():
-    return{"message": "Hello World"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
-
-
-# @app.get("/api/schedule") #schedule of events for a user
-# def getuserschedule(user_id, date=None):
-#     return {"events": events}
-
-# @app.post("/api/create_event") #xcreate new event
-# def create_event():
-#     return {"message": "Create event endpoint coming soon"}
+    return {"message": "Travel Activity Discovery API"}
