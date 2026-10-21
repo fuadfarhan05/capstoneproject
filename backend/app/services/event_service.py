@@ -1,11 +1,19 @@
 from datetime import date
+
 from fastapi import HTTPException
+
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
     EventbriteRequestError,
     EventbriteTimeoutError,
     get_eventbrite_events,
+)
+from app.providers.ticketmaster_provider import (
+    TicketmasterConfigurationError,
+    TicketmasterRequestError,
+    TicketmasterTimeoutError,
+    get_ticketmaster_events,
 )
 
 # Backend logic: filtering, finding events, and listing supported cities.
@@ -37,10 +45,10 @@ def filter_events(
     end_date: str | None = None,
     source: str = "sample",
 ):
-    if source not in {"sample", "eventbrite"}:
+    if source not in {"sample", "eventbrite", "ticketmaster"}:
         raise HTTPException(
             status_code=400,
-            detail="source must be either 'sample' or 'eventbrite'",
+            detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
         )
 
     parsed_start_date = (
@@ -63,6 +71,31 @@ def filter_events(
             status_code=400,
             detail="start_date must be before or equal to end_date",
         )
+
+    if source == "ticketmaster":
+        try:
+            return get_ticketmaster_events(
+                city=city,
+                category=category,
+                query=query,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except TicketmasterConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Ticketmaster is not configured",
+            ) from exc
+        except TicketmasterTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Ticketmaster request timed out",
+            ) from exc
+        except TicketmasterRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Ticketmaster request failed",
+            ) from exc
 
     if source == "eventbrite":
         try:

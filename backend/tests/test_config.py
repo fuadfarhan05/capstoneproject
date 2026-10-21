@@ -1,6 +1,6 @@
 import os
 
-from app.core.config import load_backend_environment
+from app.core.config import load_backend_environment, settings
 
 
 def test_load_backend_environment_reads_env_file(tmp_path, monkeypatch):
@@ -31,3 +31,7 @@ def test_load_backend_environment_preserves_existing_environment(
     load_backend_environment(env_file)
 
     assert os.getenv("TEST_BACKEND_SETTING") == "from-environment"
+
+
+def test_settings_has_ticketmaster_api_key():
+    assert hasattr(settings, "ticketmaster_api_key")

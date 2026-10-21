@@ -28,8 +28,10 @@ def get_allowed_origins() -> list[str]:
         if origin.strip()
     ]
 
+
 class Settings:
     eventbrite_api_token: str | None = os.getenv("EVENTBRITE_API_TOKEN")
+    ticketmaster_api_key: str | None = os.getenv("TICKETMASTER_API_KEY")
     allowed_origins: list[str] = get_allowed_origins()
 
 
