@@ -1,9 +1,19 @@
 from datetime import date
+
 from fastapi import HTTPException
+
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
+    EventbriteRequestError,
+    EventbriteTimeoutError,
     get_eventbrite_events,
+)
+from app.providers.ticketmaster_provider import (
+    TicketmasterConfigurationError,
+    TicketmasterRequestError,
+    TicketmasterTimeoutError,
+    get_ticketmaster_events,
 )
 
 # Backend logic: filtering, finding events, and listing supported cities.
@@ -35,7 +45,59 @@ def filter_events(
     end_date: str | None = None,
     source: str = "sample",
 ):
-    if source == 'eventbrite': #CHECKS if eventbrite data is passed through
+    if source not in {"sample", "eventbrite", "ticketmaster"}:
+        raise HTTPException(
+            status_code=400,
+            detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
+        )
+
+    parsed_start_date = (
+        _parse_date(start_date, "start_date")
+        if start_date
+        else None
+    )
+    parsed_end_date = (
+        _parse_date(end_date, "end_date")
+        if end_date
+        else None
+    )
+
+    if (
+        parsed_start_date
+        and parsed_end_date
+        and parsed_start_date > parsed_end_date
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="start_date must be before or equal to end_date",
+        )
+
+    if source == "ticketmaster":
+        try:
+            return get_ticketmaster_events(
+                city=city,
+                category=category,
+                query=query,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except TicketmasterConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Ticketmaster is not configured",
+            ) from exc
+        except TicketmasterTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Ticketmaster request timed out",
+            ) from exc
+        except TicketmasterRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Ticketmaster request failed",
+            ) from exc
+
+    if source == "eventbrite":
         try:
             return get_eventbrite_events(
                 city=city,
@@ -49,23 +111,18 @@ def filter_events(
                 status_code=503,
                 detail="Eventbrite is not configured",
             ) from exc
-
-    if source != "sample":
-        raise HTTPException(
-            status_code=400,
-            detail="source must be either 'sample' or 'eventbrite'",
-        )
-
+        except EventbriteTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Eventbrite request timed out",
+            ) from exc
+        except EventbriteRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Eventbrite request failed",
+            ) from exc
 
     filtered_events = get_sample_events()
-    parsed_start_date = _parse_date(start_date, "start_date") if start_date else None
-    parsed_end_date = _parse_date(end_date, "end_date") if end_date else None
-
-    if parsed_start_date and parsed_end_date and parsed_start_date > parsed_end_date:
-        raise HTTPException(
-            status_code=400,
-            detail="start_date must be before or equal to end_date",
-        )
 
     if city:
         filtered_events = [

@@ -1,6 +1,6 @@
 # Backend API
 
-This backend will provide the API layer for the travel event discovery app. It will support event discovery for New York City, Chicago, and San Francisco, letting the React frontend retrieve, search, and filter events without calling third-party APIs directly.
+This backend provides the API layer for the travel event discovery app. It lets the React frontend retrieve, search, and filter events without exposing third-party API credentials in the browser.
 
 ## Local Development
 
@@ -19,7 +19,7 @@ http://127.0.0.1:8000
 
 ## Current Backend Flow
 
-The current sample API is organized around this flow:
+The API is organized around this flow:
 
 ```text
 route -> service -> provider -> response
@@ -29,10 +29,11 @@ route -> service -> provider -> response
 - `app/core/config.py` reads backend configuration from environment variables.
 - `app/routes/events.py` defines the event-related HTTP endpoints.
 - `app/routes/health.py` defines a small status endpoint for local checks and deployment checks.
-- `app/services/event_service.py` handles filtering, city listing, and event lookup logic.
-- `app/providers/sample_provider.py` supplies static sample event data for local testing.
+- `app/services/event_service.py` selects the requested provider and translates provider failures into clean API errors.
+- `app/providers/sample_provider.py` supplies static data for local development and testing.
+- `app/providers/ticketmaster_provider.py` requests live Ticketmaster data and converts it into the app's event format.
 
-This keeps the API shape stable while the data source is still sample data. Later, an Eventbrite provider can be added without forcing the frontend to change how it calls the backend.
+This keeps the response shape stable regardless of which event provider supplies the data.
 
 ## Current Endpoints
 
@@ -54,6 +55,7 @@ category
 query
 start_date
 end_date
+source
 ```
 
 Example event requests:
@@ -64,11 +66,12 @@ GET /api/events?category=music
 GET /api/events?query=career
 GET /api/events?start_date=2026-10-09&end_date=2026-10-12
 GET /api/events?city=Chicago&start_date=2026-10-01&end_date=2026-10-31
+GET /api/events?source=ticketmaster&city=Chicago&category=music&query=music
 ```
 
 ## Provider Direction
 
-The first event provider should be Eventbrite. Ticketmaster may be added later, but the MVP should focus on getting one provider working end to end before adding another integration.
+Sample data remains the default provider so the backend works without external credentials. Ticketmaster is the live provider and can be selected with `source=ticketmaster`. Eventbrite groundwork remains in the project but is not the primary live provider.
 
 The backend should keep provider-specific logic isolated so the app can later support multiple providers without changing the frontend contract.
 
@@ -84,27 +87,19 @@ app/
 │   └── event_service.py
 └── providers/
     ├── sample_provider.py
-    └── eventbrite_provider.py
+    ├── eventbrite_provider.py
+    └── ticketmaster_provider.py
 ```
 
-Future provider files can be added as the integrations are built:
-
-```text
-app/providers/
-├── sample_provider.py
-├── eventbrite_provider.py
-└── ticketmaster_provider.py
-```
-
-`eventbrite_provider.py` should handle Eventbrite API requests and convert Eventbrite responses into the app's normalized event shape. `ticketmaster_provider.py` can be added when the project is ready for a second provider.
+`ticketmaster_provider.py` translates the app's filters into Ticketmaster query parameters, makes the HTTP request, and normalizes Ticketmaster's nested response into the app's `Event` model.
 
 ## API Responsibilities
 
 The backend should:
 
-- Fetch event data from Eventbrite.
+- Fetch live event data from Ticketmaster.
 - Normalize provider responses into a consistent event model.
-- Support filtering by supported city, date range, category, and keyword when Eventbrite data supports it.
+- Support filtering by city, date range, category, and keyword when the selected provider supports it.
 - Keep API keys and credentials on the server.
 - Handle provider errors gracefully.
 - Return clean JSON responses to the frontend.
@@ -141,7 +136,9 @@ cd backend
 cp .env.example .env
 ```
 
-The real `.env` file should stay local and is ignored by Git.
+The backend loads this file automatically when it starts. Existing shell or
+deployment environment variables take priority over values in `.env`. The real
+`.env` file should stay local and is ignored by Git.
 
 ```text
 EVENTBRITE_API_TOKEN=
@@ -151,12 +148,14 @@ FIREBASE_CREDENTIALS=
 ALLOWED_ORIGINS=
 ```
 
-`EVENTBRITE_API_TOKEN` is the priority for the first event integration. `TICKETMASTER_API_KEY` can remain optional until the Ticketmaster provider is implemented.
+`TICKETMASTER_API_KEY` is required only for requests using `source=ticketmaster`. Requests using the default `source=sample` do not require an external API key.
 
 Current committed example:
 
 ```text
 EVENTBRITE_API_TOKEN=
+TICKETMASTER_API_KEY=
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 ## Deployment

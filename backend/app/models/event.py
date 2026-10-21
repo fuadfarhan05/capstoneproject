@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class Event(BaseModel):
-    id: int
+    id: int | str
     title: str
     description: str
     city: str
