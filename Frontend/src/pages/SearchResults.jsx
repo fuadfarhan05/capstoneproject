@@ -11,6 +11,12 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import AuthModal from '../components/AuthModal'
 import FilterSelect from '../components/FilterSelect'
+import {
+  cityOptions,
+  categoryOptions,
+  sortOptions,
+  emptyFilters,
+} from '../data/filterOptions'
 import EventResults from '../components/EventResults'
 import { motion } from 'motion/react'
 
@@ -24,40 +30,6 @@ const words = [
   'a shopping mall',
   'an amusement park',
 ]
-
-const cityOptions = [
-  { label: 'New York City', value: 'new-york-city' },
-  { label: 'Chicago', value: 'chicago' },
-  { label: 'San Francisco', value: 'san-francisco' },
-]
-
-const distanceOptions = [
-  { label: 'Within 1 mile', value: '1' },
-  { label: 'Within 5 miles', value: '5' },
-  { label: 'Within 10 miles', value: '10' },
-  { label: 'Within 25 miles', value: '25' },
-]
-
-const priceOptions = [
-  { label: '$', value: '1' },
-  { label: '$$', value: '2' },
-  { label: '$$$', value: '3' },
-  { label: '$$$$', value: '4' },
-]
-
-const sortOptions = [
-  { label: 'Price: low to high', value: 'price-asc' },
-  { label: 'Price: high to low', value: 'price-desc' },
-  { label: 'Distance: nearest', value: 'distance' },
-  { label: 'Rating: highest', value: 'rating' },
-]
-
-const emptyFilters = {
-  city: '',
-  distance: '',
-  price: '',
-  sort: '',
-}
 
 const layoutTransition = {
   duration: 0.55,
@@ -188,18 +160,11 @@ const SearchResults = () => {
             />
 
             <FilterSelect
-              label='Distance'
-              options={distanceOptions}
-              value={filters.distance}
-              onChange={setFilter('distance')}
-            />
-
-            <FilterSelect
-              label='Price'
-              options={priceOptions}
-              value={filters.price}
-              onChange={setFilter('price')}
-              width='140px'
+              label='Category'
+              options={categoryOptions}
+              value={filters.category}
+              onChange={setFilter('category')}
+              width='200px'
             />
 
             <FilterSelect
