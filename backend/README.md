@@ -56,6 +56,8 @@ query
 start_date
 end_date
 source
+page        zero-based page number; defaults to 0
+size        events per page; defaults to 20; maximum 200
 ```
 
 Example event requests:
@@ -67,6 +69,7 @@ GET /api/events?query=career
 GET /api/events?start_date=2026-10-09&end_date=2026-10-12
 GET /api/events?city=Chicago&start_date=2026-10-01&end_date=2026-10-31
 GET /api/events?source=ticketmaster&city=Chicago&category=music&query=music
+GET /api/events?source=ticketmaster&city=Chicago&page=0&size=20
 ```
 
 ## Provider Direction
