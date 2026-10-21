@@ -11,12 +11,8 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import {
-  Destinations,
-  TravelDate,
-  ReturnDate,
-  Friends,
-} from '../components/index'
+import { Destinations, TravelDate, ReturnDate } from '../components/index'
+import { useOutletContext } from 'react-router-dom'
 
 const Groups = () => {
   const [plans, setPlans] = useState([])
@@ -25,12 +21,12 @@ const Groups = () => {
   const [travelDate, setTravelDate] = useState('')
   const [returnDate, setReturnDate] = useState('')
   const [selectedPlan, setSelectedPlan] = useState(null)
-  const [friends, setFriends] = useState([])
   const [edit, setEdit] = useState(false)
   const [editPlanName, setEditPlanName] = useState('')
   const [editDestination, setEditDestination] = useState('')
   const [editTravelDate, setEditTravelDate] = useState('')
   const [editReturnDate, setEditReturnDate] = useState('')
+  const { darkMode } = useOutletContext()
 
   const createPlan = () => {
     if (!planName.trim() || !destination || !travelDate || !returnDate) {
@@ -99,23 +95,25 @@ const Groups = () => {
 
   return (
     <>
-      <VStack align={'stretch'}>
+      <VStack align={'stretch'} bg={darkMode ? '#0F172A' : 'white'}>
         {/* Heading */}
         <Box>
-          <Heading size={{ base: 'xl', md: '2xl' }}>Group plans</Heading>
-          <Text color='grey'>Plan activities and trips with your friends.</Text>
+          <Heading size={{ base: 'xl', md: '2xl' }}>Make a Plan</Heading>
+          <Text color='grey'>
+            Create your perfect trip with activies you love.
+          </Text>
         </Box>
 
         {/* Search bar */}
         <form>
-          <Text>Make a Plan</Text>
           <Grid
             spaceY={4}
             templateColumns='repeat(5, 1fr)'
             gap='6'
             alignItems='end'
+            color={darkMode && 'white'}
           >
-            <GridItem colSpan={1} spaceY={2}>
+            <GridItem colSpan={1} spaceY={2} color={darkMode && 'white'}>
               <Heading>Trip Name </Heading>
               <Input
                 placeholder='Example: Birthday Weekend'
@@ -138,7 +136,17 @@ const Groups = () => {
             </GridItem>
 
             <GridItem colSpan={1} spaceY={2}>
-              <Button width={{ md: 100 }} onClick={createPlan}>
+              <Button
+                width={{ md: 100 }}
+                onClick={createPlan}
+                bg={'blue.700'}
+                _hover={{
+                  bg: 'blue.100',
+                  transform: 'translateY(-2px)',
+                  boxShadow: 'md',
+                  color: 'black',
+                }}
+              >
                 Create Plan
               </Button>
             </GridItem>

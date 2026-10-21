@@ -25,7 +25,7 @@ const applyFilters = (events, { city, distance, price, sort }) => {
     (e) =>
       (!city || e.city === city) &&
       (!distance || e.distance <= Number(distance)) &&
-      (!price || e.priceLevel === Number(price)),
+      (!price || e.priceLevel === Number(price))
   )
   return sort ? [...result].sort(sorters[sort]) : result
 }
@@ -39,7 +39,11 @@ const ViewToggle = ({ view, onChange }) => (
       <Button
         key={value}
         size='sm'
-        variant={view === value ? 'solid' : 'ghost'}
+        bg={view === value ? 'blue.300' : 'blue.700'}
+        color={view === value ? 'black' : 'white'}
+        _hover={{
+          bg: view === value ? 'blue.300' : 'blue.800',
+        }}
         onClick={() => onChange(value)}
         aria-pressed={view === value}
       >

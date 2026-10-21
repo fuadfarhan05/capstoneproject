@@ -100,7 +100,7 @@ const NotLoggedHome = () => {
     }))
 
   const handleSearch = () => {
-    navigate('/search', {
+    navigate('/results', {
       state: {
         query: search,
         filters: filters,
@@ -120,8 +120,9 @@ const NotLoggedHome = () => {
       </Box>
 
       <VStack align='stretch' gap={8} pt={{ base: '20vh', md: '25vh' }}>
-        <Flex justify='center' minH={10}>
+        <Flex justify='center' align='center' flexDirection='column' minH={10}>
           <Heading size={{ base: '4xl', md: '7xl' }}>Triply</Heading>
+          <Text>Making finding fun on vacation easier than ever.</Text>
         </Flex>
 
         <form onSubmit={handleSearch}>
