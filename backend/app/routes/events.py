@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from app.services.event_service import filter_events, get_cities, get_event_by_id
 from app.models.event import Event, EventListResponse
 from app.models.city import CityListResponse
@@ -15,6 +15,8 @@ def list_events(
     start_date: str | None = None,
     end_date: str | None = None,
     source: str = "sample",
+    page: int = Query(default=0, ge=0),
+    size: int = Query(default=20, ge=1, le=200),
 ):
     return {
         "events": filter_events(
@@ -24,6 +26,8 @@ def list_events(
             start_date=start_date,
             end_date=end_date,
             source=source,
+            page=page,
+            size=size,
         )
     }
 

@@ -218,7 +218,53 @@ def test_events_ticketmaster_source_returns_events():
         query="music",
         start_date=None,
         end_date=None,
+        page=0,
+        size=20,
     )
+
+
+# Verifies that custom pagination values reach the Ticketmaster provider.
+def test_events_ticketmaster_source_passes_pagination():
+    with patch(
+        "app.services.event_service.get_ticketmaster_events",
+        return_value=[],
+    ) as mock_get_events:
+        response = client.get(
+            "/api/events?source=ticketmaster&page=2&size=25"
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"events": []}
+    mock_get_events.assert_called_once_with(
+        city=None,
+        category=None,
+        query=None,
+        start_date=None,
+        end_date=None,
+        page=2,
+        size=25,
+    )
+
+
+# Verifies that page numbers cannot be negative.
+def test_events_rejects_negative_page():
+    response = client.get("/api/events?page=-1")
+
+    assert response.status_code == 422
+
+
+# Verifies that a page size must contain at least one event.
+def test_events_rejects_zero_size():
+    response = client.get("/api/events?size=0")
+
+    assert response.status_code == 422
+
+
+# Verifies that a page size cannot exceed our API's safety limit of 200 events.
+def test_events_rejects_size_above_api_limit():
+    response = client.get("/api/events?size=201")
+
+    assert response.status_code == 422
 
 
 # Verifies that missing Ticketmaster configuration becomes a 503 response.

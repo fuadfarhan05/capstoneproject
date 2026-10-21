@@ -66,6 +66,23 @@ def test_build_ticketmaster_search_params_with_filters(monkeypatch):
     }
 
 
+# Verifies that pagination values are included in the Ticketmaster request parameters.
+def test_build_ticketmaster_search_params_includes_pagination(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    params = build_ticketmaster_search_params(
+        page=2,
+        size=25,
+    )
+
+    assert params["page"] == 2
+    assert params["size"] == 25
+
+
 # Verifies that optional filters are omitted when the caller does not provide them.
 def test_build_ticketmaster_search_params_omits_empty_filters(
     monkeypatch,
@@ -334,6 +351,8 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
             query="music",
             start_date="2026-10-22",
             end_date="2026-10-23",
+            page=2,
+            size=25,
         )
 
     fake_response.raise_for_status.assert_called_once()
@@ -346,6 +365,8 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
             "keyword": "music",
             "startDateTime": "2026-10-22T00:00:00Z",
             "endDateTime": "2026-10-23T23:59:59Z",
+            "page": 2,
+            "size": 25,
         },
         timeout=10,
     )

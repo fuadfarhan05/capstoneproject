@@ -26,6 +26,8 @@ def build_ticketmaster_search_params(
     query: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
+    page: int | None = None,
+    size: int | None = None,
 ) -> dict:
     api_key = settings.ticketmaster_api_key
 
@@ -50,6 +52,12 @@ def build_ticketmaster_search_params(
 
     if end_date:
         params["endDateTime"] = f"{end_date}T23:59:59Z"
+
+    if page is not None:
+        params["page"] = page
+
+    if size is not None:
+        params["size"] = size
 
     return params
 
@@ -171,6 +179,8 @@ def get_ticketmaster_events(
     query: str | None = None,
     start_date: str | None = None,
     end_date: str | None = None,
+    page: int | None = None,
+    size: int | None = None,
 ) -> list[dict]:
     params = build_ticketmaster_search_params(
         city=city,
@@ -178,6 +188,8 @@ def get_ticketmaster_events(
         query=query,
         start_date=start_date,
         end_date=end_date,
+        page=page,
+        size=size,
     )
 
     try:

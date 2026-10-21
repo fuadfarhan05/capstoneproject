@@ -44,6 +44,8 @@ def filter_events(
     start_date: str | None = None,
     end_date: str | None = None,
     source: str = "sample",
+    page: int = 0,
+    size: int = 20,
 ):
     if source not in {"sample", "eventbrite", "ticketmaster"}:
         raise HTTPException(
@@ -80,6 +82,8 @@ def filter_events(
                 query=query,
                 start_date=start_date,
                 end_date=end_date,
+                page=page,
+                size=size,
             )
         except TicketmasterConfigurationError as exc:
             raise HTTPException(
