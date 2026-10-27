@@ -1,5 +1,6 @@
 export { default as NotLoggedHome } from './NotLoggedHome'
-export { default as SearchResults } from './SearchResults'
-export { default as Groups } from './Groups'
 export { default as Profile } from './Profile'
 export { default as SavedActivies } from './SavedActivies'
+export { default as Results } from './Results'
+export { default as LandingPage } from './LandingPage'
+export { default as Plans } from './Plans'

@@ -1,9 +1,4 @@
-import {
-  Box,
-  Flex,
-  Heading,
-  VStack,
-} from '@chakra-ui/react'
+import { Box, Flex, Heading, VStack, Separator } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import Menu from './Menu'
@@ -20,6 +15,7 @@ const layoutTransition = {
 const Navbar = () => {
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('signup')
+  const [darkMode, setDarkMode] = useState(false)
 
   const openAuth = (mode) => {
     setAuthMode(mode)
@@ -29,10 +25,10 @@ const Navbar = () => {
   const navigate = useNavigate()
 
   return (
-    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
+    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16} bg='#EAF9FF'>
       <VStack align='stretch' gap={5}>
         <Flex justify='flex-start' minH={10} pt={5}>
-          <Menu />
+          <Menu darkMode={darkMode} setDarkMode={setDarkMode} />
 
           <Heading
             ml={4}
@@ -40,6 +36,7 @@ const Navbar = () => {
             size={{ base: 'xl', md: '3xl' }}
             cursor='pointer'
             onClick={() => navigate('/')}
+            color='blue.700'
           >
             <motion.h1 layout transition={layoutTransition}>
               Triply
@@ -62,7 +59,7 @@ const Navbar = () => {
           onModeChange={setAuthMode}
           onClose={() => setAuthOpen(false)}
         />
-
+        <Separator />
         <Outlet />
       </VStack>
     </Box>

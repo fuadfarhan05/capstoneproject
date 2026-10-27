@@ -1,21 +1,21 @@
 import { Routes, Route } from 'react-router-dom'
 import {
-  NotLoggedHome,
-  SearchResults,
-  Groups,
   Profile,
   SavedActivies,
+  Results,
+  LandingPage,
+  Plans,
 } from './pages/index'
 import { NavBar } from './components/index'
 
 const App = () => {
   return (
     <Routes>
-      <Route path='/' element={<NotLoggedHome />} />
+      <Route path='/' element={<LandingPage />} />
 
       <Route element={<NavBar />}>
-        <Route path='/search' element={<SearchResults />} />
-        <Route path='/groups' element={<Groups />} />
+        <Route path='/plans' element={<Plans />} />
+        <Route path='/results' element={<Results />} />
         <Route path='/profile' element={<Profile />} />
         <Route path='/saved-activies' element={<SavedActivies />} />
       </Route>

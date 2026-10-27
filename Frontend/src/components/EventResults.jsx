@@ -146,11 +146,9 @@ const EventResults = ({
     const controller = new AbortController()
     fetchEvents(
       { city, category, query, page, size: PAGE_SIZE },
-      { signal: controller.signal },
+      { signal: controller.signal }
     )
-      .then(({ events }) =>
-        setResult({ key: requestKey, events, error: null }),
-      )
+      .then(({ events }) => setResult({ key: requestKey, events, error: null }))
       .catch((err) => {
         if (err.name === 'AbortError') return // a newer request replaced it
         console.error('Could not load events:', err)
@@ -164,15 +162,15 @@ const EventResults = ({
       sort && sorters[sort]
         ? [...result.events].sort(sorters[sort])
         : result.events,
-    [result.events, sort],
+    [result.events, sort]
   )
 
   const cityLabel = cityOptions.find((o) => o.value === city)?.label ?? city
   const heading = query
     ? `Results for “${query}”`
     : cityLabel
-      ? `Things to do in ${cityLabel}`
-      : 'Popular activities'
+    ? `Things to do in ${cityLabel}`
+    : 'Popular activities'
   const hasFilters = Boolean(city || category || sort)
   const hasPreviousPage = page > 0
   const hasNextPage = result.events.length === PAGE_SIZE
@@ -252,40 +250,38 @@ const EventResults = ({
             {loading
               ? 'Searching…'
               : result.error
-                ? ' '
-                : `${events.length} ${events.length === 1 ? 'activity' : 'activities'} on page ${page + 1}`}
+              ? ' '
+              : `${events.length} ${
+                  events.length === 1 ? 'activity' : 'activities'
+                } on page ${page + 1}`}
           </Text>
         </Box>
         <ViewToggle view={view} onChange={onViewChange} />
       </Flex>
       {body}
-      {!loading &&
-        !result.error &&
-        (events.length > 0 || hasPreviousPage) && (
-          <HStack justify='center' gap={3} mt={8}>
-            <Button
-              variant='outline'
-              onClick={() =>
-                changePage((current) => Math.max(0, current - 1))
-              }
-              disabled={!hasPreviousPage}
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </Button>
-            <Text color='fg.muted' minW='80px' textAlign='center'>
-              Page {page + 1}
-            </Text>
-            <Button
-              variant='outline'
-              onClick={() => changePage((current) => current + 1)}
-              disabled={!hasNextPage}
-            >
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          </HStack>
-        )}
+      {!loading && !result.error && (events.length > 0 || hasPreviousPage) && (
+        <HStack justify='center' gap={3} mt={8}>
+          <Button
+            variant='outline'
+            onClick={() => changePage((current) => Math.max(0, current - 1))}
+            disabled={!hasPreviousPage}
+          >
+            <ChevronLeft size={16} />
+            Previous
+          </Button>
+          <Text color='fg.muted' minW='80px' textAlign='center'>
+            Page {page + 1}
+          </Text>
+          <Button
+            variant='outline'
+            onClick={() => changePage((current) => current + 1)}
+            disabled={!hasNextPage}
+          >
+            Next
+            <ChevronRight size={16} />
+          </Button>
+        </HStack>
+      )}
     </Box>
   )
 }
