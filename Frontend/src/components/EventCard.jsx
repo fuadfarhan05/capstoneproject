@@ -1,31 +1,39 @@
-import { Box, Flex, HStack, Heading, Text, Badge } from '@chakra-ui/react'
-import { MapPin, Star, Navigation } from 'lucide-react'
+import { Box, Flex, HStack, Heading, Text, Badge, Link } from '@chakra-ui/react'
+import { MapPin, Ticket } from 'lucide-react'
 import SaveButton from './SaveButton'
+import {
+  getCoverBackground,
+  formatEventDate,
+  formatEventTime,
+  formatPricing,
+  formatCategory,
+} from '../utils/eventDisplay'
 
-const formatPrice = (price) => (price === 0 ? 'Free' : `$${price}`)
-
-// Image placeholder: a gradient with the category pill on top
+// Event photo (or a gradient when there isn't one) with the category pill
 const Cover = ({ event, onRequireAuth, ...props }) => (
   <Box
     position='relative'
     flexShrink={0}
-    style={{ background: event.gradient }}
+    bg='bg.muted'
+    style={{ background: getCoverBackground(event) }}
     {...props}
   >
-    <Badge
-      position='absolute'
-      top={3}
-      left={3}
-      borderRadius='full'
-      px={3}
-      py={1}
-      bg='whiteAlpha.900'
-      color='gray.900'
-      fontWeight='semibold'
-      fontSize='xs'
-    >
-      {event.category}
-    </Badge>
+    {event.category && event.category !== 'unknown' && (
+      <Badge
+        position='absolute'
+        top={3}
+        left={3}
+        borderRadius='full'
+        px={3}
+        py={1}
+        bg='whiteAlpha.900'
+        color='gray.900'
+        fontWeight='semibold'
+        fontSize='xs'
+      >
+        {formatCategory(event.category)}
+      </Badge>
+    )}
     <SaveButton
       event={event}
       onRequireAuth={onRequireAuth}
@@ -37,21 +45,23 @@ const Cover = ({ event, onRequireAuth, ...props }) => (
 )
 
 const Meta = ({ event }) => (
-  <HStack gap={4} fontSize='sm' color='fg.muted' wrap='wrap'>
-    <Text fontWeight='bold' fontSize='md' color='fg'>
-      {formatPrice(event.price)}
+  <HStack gap={4} justify='space-between' wrap='wrap'>
+    <Text fontWeight='bold' fontSize='md'>
+      {formatPricing(event)}
     </Text>
-    <HStack gap={1}>
-      <Navigation size={14} />
-      <Text>{event.distance} mi</Text>
-    </HStack>
-    <HStack gap={1}>
-      <Star size={14} fill='currentColor' color='#f59e0b' />
-      <Text color='fg' fontWeight='medium'>
-        {event.rating}
-      </Text>
-      <Text>({event.reviews.toLocaleString()})</Text>
-    </HStack>
+    {event.ticket_link && (
+      <Link
+        href={event.ticket_link}
+        target='_blank'
+        rel='noopener noreferrer'
+        fontSize='sm'
+        fontWeight='semibold'
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Ticket size={14} />
+        Get tickets
+      </Link>
+    )}
   </HStack>
 )
 
@@ -63,18 +73,26 @@ const Eyebrow = ({ event }) => (
     textTransform='uppercase'
     color='fg.muted'
   >
-    {event.date} · {event.time}
+    {formatEventDate(event.date)}
+    {event.time && ` · ${formatEventTime(event.time)}`}
   </Text>
 )
 
-const Venue = ({ event }) => (
-  <HStack gap={1.5} color='fg.muted' fontSize='sm' minW={0}>
-    <MapPin size={14} style={{ flexShrink: 0 }} />
-    <Text truncate>
-      {event.venue} · {event.neighborhood}
-    </Text>
-  </HStack>
-)
+const Venue = ({ event }) => {
+  // older saved events have `neighborhood`; API events have `city`
+  const place = [event.venue, event.neighborhood ?? event.city]
+    .filter(Boolean)
+    .join(' · ')
+  if (!place) return null
+  return (
+    <HStack gap={1.5} color='fg.muted' fontSize='sm' minW={0}>
+      <MapPin size={14} style={{ flexShrink: 0 }} />
+      <Text truncate title={event.address ?? undefined}>
+        {place}
+      </Text>
+    </HStack>
+  )
+}
 
 const cardStyles = {
   borderRadius: '2xl',
@@ -103,9 +121,11 @@ const EventCard = ({ event, view, onRequireAuth }) => {
             {event.title}
           </Heading>
           <Venue event={event} />
-          <Text fontSize='sm' color='fg.muted' lineClamp={2}>
-            {event.description}
-          </Text>
+          {event.description && (
+            <Text fontSize='sm' color='fg.muted' lineClamp={2}>
+              {event.description}
+            </Text>
+          )}
           <Box mt='auto' pt={2}>
             <Meta event={event} />
           </Box>

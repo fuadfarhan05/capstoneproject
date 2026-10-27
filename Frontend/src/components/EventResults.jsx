@@ -124,114 +124,7 @@ const EventResults = ({
   onClearFilters,
   onRequireAuth,
 }) => {
-  const { city, category, sort } = filters
-  const [pagination, setPagination] = useState({ filterKey: null, page: 0 })
-  const [retryCount, setRetryCount] = useState(0)
-
-  const filterKey = JSON.stringify([query, city, category])
-  const page = pagination.filterKey === filterKey ? pagination.page : 0
-  const changePage = (getNextPage) =>
-    setPagination((current) => {
-      const currentPage = current.filterKey === filterKey ? current.page : 0
-      return { filterKey, page: getNextPage(currentPage) }
-    })
-
-  // Which request the current state belongs to. When the search or filters
-  // change, the key changes and we're "loading" until the new result lands.
-  const requestKey = JSON.stringify([filterKey, page, retryCount])
-  const [result, setResult] = useState({ key: null, events: [], error: null })
-  const loading = result.key !== requestKey
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetchEvents(
-      { city, category, query, page, size: PAGE_SIZE },
-      { signal: controller.signal }
-    )
-      .then(({ events }) => setResult({ key: requestKey, events, error: null }))
-      .catch((err) => {
-        if (err.name === 'AbortError') return // a newer request replaced it
-        console.error('Could not load events:', err)
-        setResult({ key: requestKey, events: [], error: err.message })
-      })
-    return () => controller.abort()
-  }, [city, category, query, page, requestKey])
-
-  const events = useMemo(
-    () =>
-      sort && sorters[sort]
-        ? [...result.events].sort(sorters[sort])
-        : result.events,
-    [result.events, sort]
-  )
-
-  const cityLabel = cityOptions.find((o) => o.value === city)?.label ?? city
-  const heading = query
-    ? `Results for “${query}”`
-    : cityLabel
-    ? `Things to do in ${cityLabel}`
-    : 'Popular activities'
-  const hasFilters = Boolean(city || category || sort)
-  const hasPreviousPage = page > 0
-  const hasNextPage = result.events.length === PAGE_SIZE
-
-  let body
-  if (loading) {
-    body = <LoadingCards view={view} />
-  } else if (result.error) {
-    body = (
-      <Message icon={CloudOff} title="Couldn't load activities">
-        <Text maxW='md'>{result.error}</Text>
-        <Button
-          variant='outline'
-          size='sm'
-          onClick={() => setRetryCount((n) => n + 1)}
-        >
-          Try again
-        </Button>
-      </Message>
-    )
-  } else if (events.length === 0) {
-    body = (
-      <Message
-        icon={SearchX}
-        title={
-          hasFilters
-            ? 'No activities match these filters'
-            : 'No activities found'
-        }
-      >
-        {hasFilters && (
-          <Button variant='outline' size='sm' onClick={onClearFilters}>
-            Clear filters
-          </Button>
-        )}
-      </Message>
-    )
-  } else {
-    body = (
-      <AnimatePresence mode='wait'>
-        <motion.div
-          key={view + requestKey}
-          variants={container}
-          initial='hidden'
-          animate='show'
-          exit={{ opacity: 0, transition: { duration: 0.15 } }}
-          style={layoutStyle(view)}
-        >
-          {events.map((event) => (
-            <motion.div key={event.id} variants={item} layout='position'>
-              <EventCard
-                event={event}
-                view={view}
-                onRequireAuth={onRequireAuth}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-      </AnimatePresence>
-    )
-  }
+  const events = useMemo(() => applyFilters(mockEvents, filters), [filters])
 
   return (
     <Box width='100%'>
@@ -247,40 +140,53 @@ const EventResults = ({
             {heading}
           </Heading>
           <Text color='fg.muted' mt={1}>
-            {loading
-              ? 'Searching…'
-              : result.error
-              ? ' '
-              : `${events.length} ${
-                  events.length === 1 ? 'activity' : 'activities'
-                } on page ${page + 1}`}
+            {events.length} {events.length === 1 ? 'activity' : 'activities'}{' '}
+            found
           </Text>
         </Box>
         <ViewToggle view={view} onChange={onViewChange} />
       </Flex>
-      {body}
-      {!loading && !result.error && (events.length > 0 || hasPreviousPage) && (
-        <HStack justify='center' gap={3} mt={8}>
-          <Button
-            variant='outline'
-            onClick={() => changePage((current) => Math.max(0, current - 1))}
-            disabled={!hasPreviousPage}
-          >
-            <ChevronLeft size={16} />
-            Previous
+
+      {events.length === 0 ? (
+        <VStack py={16} gap={3} color='fg.muted'>
+          <SearchX size={40} />
+          <Heading size='md' color='fg'>
+            No activities match these filters
+          </Heading>
+          <Button variant='outline' size='sm' onClick={onClearFilters}>
+            Clear filters
           </Button>
-          <Text color='fg.muted' minW='80px' textAlign='center'>
-            Page {page + 1}
-          </Text>
-          <Button
-            variant='outline'
-            onClick={() => changePage((current) => current + 1)}
-            disabled={!hasNextPage}
+        </VStack>
+      ) : (
+        <AnimatePresence mode='wait'>
+          <motion.div
+            key={view + JSON.stringify(filters)}
+            variants={container}
+            initial='hidden'
+            animate='show'
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            style={
+              view === 'gallery'
+                ? {
+                    display: 'grid',
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                    gap: '24px',
+                  }
+                : { display: 'flex', flexDirection: 'column', gap: '16px' }
+            }
           >
-            Next
-            <ChevronRight size={16} />
-          </Button>
-        </HStack>
+            {events.map((event) => (
+              <motion.div key={event.id} variants={item}>
+                <EventCard
+                  event={event}
+                  view={view}
+                  onRequireAuth={onRequireAuth}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       )}
     </Box>
   )

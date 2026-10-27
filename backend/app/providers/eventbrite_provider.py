@@ -8,6 +8,14 @@ class EventbriteConfigurationError(RuntimeError):
     """Raised when the Eventbrite provider is missing required configuration."""
 
 
+class EventbriteRequestError(RuntimeError):
+    """Raised when an Eventbrite HTTP request fails."""
+
+
+class EventbriteTimeoutError(EventbriteRequestError):
+    """Raised when Eventbrite does not respond before the timeout."""
+
+
 #reads in the eventbrite api token and searches eventbrite using the filters. then normalizes into the apps shape
 
 def normalize_eventbrite_event(eventbrite_event: dict, city: str) -> dict:
@@ -64,14 +72,22 @@ def get_eventbrite_events(
         end_date=end_date,
     )
 
-    response = httpx.get( #send GET request to eventbrite
-        EVENTBRITE_SEARCH_URL,
-        headers=headers,
-        params=params,
-        timeout=10
-    )
-
-    response.raise_for_status()
+    try:
+        response = httpx.get(
+            EVENTBRITE_SEARCH_URL,
+            headers=headers,
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise EventbriteTimeoutError(
+            "Eventbrite request timed out"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise EventbriteRequestError(
+            "Eventbrite request failed"
+        ) from exc
 
     return normalize_eventbrite_response(response.json(), city=city or "")
 

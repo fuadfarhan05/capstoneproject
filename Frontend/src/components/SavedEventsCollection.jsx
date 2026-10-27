@@ -13,8 +13,9 @@ import { Bookmark, ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useSavedEvents } from '../SavedEventsContext'
 import EventCard from './EventCard'
+import { getCoverBackground } from '../utils/eventDisplay'
 
-// Overlapping gradient thumbnails of the first few saved events,
+// Overlapping photo thumbnails of the first few saved events,
 // like the cover of a playlist/collection
 const CollectionCover = ({ events }) => {
   const previews = events.slice(0, 3)
@@ -43,7 +44,7 @@ const CollectionCover = ({ events }) => {
           borderColor='bg'
           shadow='sm'
           zIndex={previews.length - i}
-          style={{ background: event.gradient }}
+          style={{ background: getCoverBackground(event) }}
         />
       ))}
     </Box>
