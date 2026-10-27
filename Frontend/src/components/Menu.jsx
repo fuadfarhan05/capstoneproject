@@ -129,7 +129,7 @@ const Menu = () => {
 
                 <HStack
                   as={Link}
-                  to='/groups'
+                  to='/plans'
                   gap={2}
                   px={4}
                   py={3}

@@ -12,9 +12,8 @@ import {
 } from '@chakra-ui/react'
 import { useState } from 'react'
 import { Destinations, TravelDate, ReturnDate } from '../components/index'
-import { useOutletContext } from 'react-router-dom'
 
-const Groups = () => {
+const Plans = () => {
   const [plans, setPlans] = useState([])
   const [planName, setPlanName] = useState('')
   const [destination, setDestination] = useState('')
@@ -26,7 +25,6 @@ const Groups = () => {
   const [editDestination, setEditDestination] = useState('')
   const [editTravelDate, setEditTravelDate] = useState('')
   const [editReturnDate, setEditReturnDate] = useState('')
-  const { darkMode } = useOutletContext()
 
   const createPlan = () => {
     if (!planName.trim() || !destination || !travelDate || !returnDate) {
@@ -95,7 +93,7 @@ const Groups = () => {
 
   return (
     <>
-      <VStack align={'stretch'} bg={darkMode ? '#0F172A' : 'white'}>
+      <VStack align={'stretch'}>
         {/* Heading */}
         <Box>
           <Heading size={{ base: 'xl', md: '2xl' }}>Make a Plan</Heading>
@@ -111,9 +109,8 @@ const Groups = () => {
             templateColumns='repeat(5, 1fr)'
             gap='6'
             alignItems='end'
-            color={darkMode && 'white'}
           >
-            <GridItem colSpan={1} spaceY={2} color={darkMode && 'white'}>
+            <GridItem colSpan={1} spaceY={2}>
               <Heading>Trip Name </Heading>
               <Input
                 placeholder='Example: Birthday Weekend'
@@ -335,4 +332,4 @@ const Groups = () => {
     </>
   )
 }
-export default Groups
+export default Plans

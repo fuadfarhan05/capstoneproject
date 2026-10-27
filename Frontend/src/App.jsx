@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom'
 import {
-  Groups,
   Profile,
   SavedActivies,
   Results,
   LandingPage,
+  Plans,
 } from './pages/index'
 import { NavBar } from './components/index'
 
@@ -14,8 +14,8 @@ const App = () => {
       <Route path='/' element={<LandingPage />} />
 
       <Route element={<NavBar />}>
+        <Route path='/plans' element={<Plans />} />
         <Route path='/results' element={<Results />} />
-        <Route path='/groups' element={<Groups />} />
         <Route path='/profile' element={<Profile />} />
         <Route path='/saved-activies' element={<SavedActivies />} />
       </Route>
