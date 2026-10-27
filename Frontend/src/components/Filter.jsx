@@ -61,7 +61,14 @@ const Filter = ({ filter, onChange }) => {
       <Select.HiddenSelect />
 
       <Select.Control>
-        <Select.Trigger borderRadius='full' px={4}>
+        <Select.Trigger
+          borderRadius='full'
+          px={4}
+          bg='white'
+          color='#12304A'
+          borderColor='gray.200'
+          _hover={{ bg: 'gray.50' }}
+        >
           <Select.ValueText placeholder={placeholder} />
         </Select.Trigger>
         <Select.IndicatorGroup pr={2}>

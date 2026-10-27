@@ -25,7 +25,7 @@ const Navbar = () => {
   const navigate = useNavigate()
 
   return (
-    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16}>
+    <Box minH='100vh' px={{ base: 4, md: 12, lg: 20 }} pb={16} bg='#EAF9FF'>
       <VStack align='stretch' gap={5}>
         <Flex justify='flex-start' minH={10} pt={5}>
           <Menu darkMode={darkMode} setDarkMode={setDarkMode} />
@@ -60,7 +60,7 @@ const Navbar = () => {
           onClose={() => setAuthOpen(false)}
         />
         <Separator />
-        <Outlet context={{ darkMode, setDarkMode }} />
+        <Outlet />
       </VStack>
     </Box>
   )

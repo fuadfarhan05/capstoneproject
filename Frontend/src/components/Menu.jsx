@@ -25,7 +25,7 @@ import Airplane from '../assets/pngwing.com.png'
 import { useAuth } from '../AuthContext'
 import { UserTile } from '../components/index'
 
-const Menu = ({ darkMode, setDarkMode }) => {
+const Menu = () => {
   const [open, setOpen] = useState(false)
   const { user, loading } = useAuth()
   const [authMode, setAuthMode] = useState('login')
@@ -205,12 +205,6 @@ const Menu = ({ darkMode, setDarkMode }) => {
             <Drawer.Footer>
               <Switch.Root>
                 <Switch.HiddenInput />
-                <Switch.Control onClick={() => setDarkMode(!darkMode)} />
-                {darkMode ? (
-                  <Switch.Label>Dark Mode</Switch.Label>
-                ) : (
-                  <Switch.Label>Light Mode</Switch.Label>
-                )}
               </Switch.Root>{' '}
               {user ? (
                 <Button onClick={handleSignOut}>Sign Out</Button>

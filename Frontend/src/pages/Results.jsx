@@ -83,7 +83,7 @@ const Results = () => {
   }
   return (
     <>
-      <VStack align='stretch' gap={5}>
+      <VStack align='stretch' gap={5} bg='#EAF9FF'>
         <motion.div layout='position' transition={layoutTransition}>
           <form onSubmit={handleSearch}>
             <Box
@@ -136,18 +136,20 @@ const Results = () => {
 
                     <Button
                       type='submit'
-                      size='lg'
-                      px={7}
-                      fontSize='md'
-                      flexShrink={0}
-                      transition={sizeTransition}
-                      bg='blue.700'
+                      h={{ base: '56px', md: '72px' }}
+                      px={{ base: 8, md: 10 }}
+                      borderRadius='full'
+                      fontSize='lg'
+                      fontWeight='bold'
+                      bg='#2879CF'
+                      color='white'
+                      boxShadow='0 8px 20px rgba(40,121,207,0.25)'
                       _hover={{
-                        bg: 'blue.300',
+                        bg: '#1E65B0',
                         transform: 'translateY(-2px)',
-                        boxShadow: 'md',
-                        color: 'black',
+                        boxShadow: '0 10px 24px rgba(40,121,207,0.32)',
                       }}
+                      transition='all 0.2s'
                     >
                       Find Activities
                     </Button>
