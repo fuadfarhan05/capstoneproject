@@ -11,11 +11,20 @@ import {
   SkeletonText,
 } from '@chakra-ui/react'
 import { motion, AnimatePresence } from 'motion/react'
-import { LayoutList, LayoutGrid, SearchX, CloudOff } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutList,
+  LayoutGrid,
+  SearchX,
+  CloudOff,
+} from 'lucide-react'
 import EventCard from './EventCard'
 import { fetchEvents } from '../api/events'
 import { getMinPrice } from '../utils/eventDisplay'
 import { cityOptions } from '../data/filterOptions'
+
+const PAGE_SIZE = 20
 
 // Events with no known price/date go last whichever way we sort
 const byNumber = (getValue, direction) => (a, b) => {
@@ -116,25 +125,39 @@ const EventResults = ({
   onRequireAuth,
 }) => {
   const { city, category, sort } = filters
+  const [pagination, setPagination] = useState({ filterKey: null, page: 0 })
   const [retryCount, setRetryCount] = useState(0)
+
+  const filterKey = JSON.stringify([query, city, category])
+  const page = pagination.filterKey === filterKey ? pagination.page : 0
+  const changePage = (getNextPage) =>
+    setPagination((current) => {
+      const currentPage = current.filterKey === filterKey ? current.page : 0
+      return { filterKey, page: getNextPage(currentPage) }
+    })
 
   // Which request the current state belongs to. When the search or filters
   // change, the key changes and we're "loading" until the new result lands.
-  const requestKey = JSON.stringify([query, city, category, retryCount])
+  const requestKey = JSON.stringify([filterKey, page, retryCount])
   const [result, setResult] = useState({ key: null, events: [], error: null })
   const loading = result.key !== requestKey
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchEvents({ city, category, query }, { signal: controller.signal })
-      .then((events) => setResult({ key: requestKey, events, error: null }))
+    fetchEvents(
+      { city, category, query, page, size: PAGE_SIZE },
+      { signal: controller.signal },
+    )
+      .then(({ events }) =>
+        setResult({ key: requestKey, events, error: null }),
+      )
       .catch((err) => {
         if (err.name === 'AbortError') return // a newer request replaced it
         console.error('Could not load events:', err)
         setResult({ key: requestKey, events: [], error: err.message })
       })
     return () => controller.abort()
-  }, [city, category, query, requestKey])
+  }, [city, category, query, page, requestKey])
 
   const events = useMemo(
     () =>
@@ -151,6 +174,8 @@ const EventResults = ({
       ? `Things to do in ${cityLabel}`
       : 'Popular activities'
   const hasFilters = Boolean(city || category || sort)
+  const hasPreviousPage = page > 0
+  const hasNextPage = result.events.length === PAGE_SIZE
 
   let body
   if (loading) {
@@ -228,12 +253,39 @@ const EventResults = ({
               ? 'Searching…'
               : result.error
                 ? ' '
-                : `${events.length} ${events.length === 1 ? 'activity' : 'activities'} found`}
+                : `${events.length} ${events.length === 1 ? 'activity' : 'activities'} on page ${page + 1}`}
           </Text>
         </Box>
         <ViewToggle view={view} onChange={onViewChange} />
       </Flex>
       {body}
+      {!loading &&
+        !result.error &&
+        (events.length > 0 || hasPreviousPage) && (
+          <HStack justify='center' gap={3} mt={8}>
+            <Button
+              variant='outline'
+              onClick={() =>
+                changePage((current) => Math.max(0, current - 1))
+              }
+              disabled={!hasPreviousPage}
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </Button>
+            <Text color='fg.muted' minW='80px' textAlign='center'>
+              Page {page + 1}
+            </Text>
+            <Button
+              variant='outline'
+              onClick={() => changePage((current) => current + 1)}
+              disabled={!hasNextPage}
+            >
+              Next
+              <ChevronRight size={16} />
+            </Button>
+          </HStack>
+        )}
     </Box>
   )
 }

@@ -3,14 +3,19 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
 
-// GET /api/events?source=ticketmaster[&city=&category=&query=]
-// Only filters that are set are sent. Returns the `events` array.
+// GET /api/events?source=ticketmaster[&city=&category=&query=&page=&size=]
+// Only filters that are set are sent. Pagination is always explicit so the
+// UI can move through the same result set predictably.
 // Throws an Error whose message is safe to show to the user.
 export async function fetchEvents(
-  { city, category, query } = {},
+  { city, category, query, page = 0, size = 20 } = {},
   { signal } = {},
 ) {
-  const params = new URLSearchParams({ source: 'ticketmaster' })
+  const params = new URLSearchParams({
+    source: 'ticketmaster',
+    page: String(page),
+    size: String(size),
+  })
   if (city) params.set('city', city)
   if (category) params.set('category', category)
   if (query) params.set('query', query)
@@ -34,5 +39,9 @@ export async function fetchEvents(
   }
 
   const data = await response.json()
-  return data.events ?? []
+  return {
+    events: data.events ?? [],
+    page,
+    size,
+  }
 }

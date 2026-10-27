@@ -146,6 +146,7 @@ def normalize_ticketmaster_event(
         "city": venue_city,
         "venue": venue.get("name", ""),
         "date": start.get("localDate", ""),
+        "time": start.get("localTime"),
         "category": category,
         "address": address,
         "pricing": pricing,

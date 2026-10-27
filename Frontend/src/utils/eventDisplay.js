@@ -48,6 +48,19 @@ export const formatEventDate = (date) => {
   )
 }
 
+// "19:30:00" -> "7:30 PM". Anything else is shown as-is.
+export const formatEventTime = (time) => {
+  const match = /^(\d{2}):(\d{2})/.exec(time ?? '')
+  if (!match) return time ?? ''
+
+  const hours = Number(match[1])
+  const minutes = match[2]
+  const period = hours >= 12 ? 'PM' : 'AM'
+  const displayHour = hours % 12 || 12
+
+  return `${displayHour}:${minutes} ${period}`
+}
+
 const money = (amount) =>
   `$${Number.isInteger(amount) ? amount : amount.toFixed(2)}`
 
