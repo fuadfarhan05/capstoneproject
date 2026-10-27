@@ -29,9 +29,6 @@ const layoutTransition = {
   ease: [0.22, 1, 0.36, 1],
 }
 
-const sizeTransition =
-  'height 0.55s cubic-bezier(0.22, 1, 0.36, 1), font-size 0.55s cubic-bezier(0.22, 1, 0.36, 1), padding 0.55s cubic-bezier(0.22, 1, 0.36, 1)'
-
 const Results = () => {
   const location = useLocation()
 

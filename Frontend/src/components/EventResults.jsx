@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Flex,
@@ -7,27 +7,38 @@ import {
   Text,
   Button,
   VStack,
+  Skeleton,
+  SkeletonText,
 } from '@chakra-ui/react'
 import { motion, AnimatePresence } from 'motion/react'
-import { LayoutList, LayoutGrid, SearchX } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutList,
+  LayoutGrid,
+  SearchX,
+  CloudOff,
+} from 'lucide-react'
 import EventCard from './EventCard'
-import { mockEvents } from '../data/mockEvents'
+import { fetchEvents } from '../api/events'
+import { getMinPrice } from '../utils/eventDisplay'
+import { cityOptions } from '../data/filterOptions'
+
+const PAGE_SIZE = 20
+
+// Events with no known price/date go last whichever way we sort
+const byNumber = (getValue, direction) => (a, b) => {
+  const [x, y] = [getValue(a), getValue(b)]
+  if (x === null) return y === null ? 0 : 1
+  if (y === null) return -1
+  return direction * (x - y)
+}
+const dateValue = (e) => (e.date ? Date.parse(e.date) || null : null)
 
 const sorters = {
-  'price-asc': (a, b) => a.price - b.price,
-  'price-desc': (a, b) => b.price - a.price,
-  distance: (a, b) => a.distance - b.distance,
-  rating: (a, b) => b.rating - a.rating,
-}
-
-const applyFilters = (events, { city, distance, price, sort }) => {
-  const result = events.filter(
-    (e) =>
-      (!city || e.city === city) &&
-      (!distance || e.distance <= Number(distance)) &&
-      (!price || e.priceLevel === Number(price))
-  )
-  return sort ? [...result].sort(sorters[sort]) : result
+  date: byNumber(dateValue, 1),
+  'price-asc': byNumber(getMinPrice, 1),
+  'price-desc': byNumber(getMinPrice, -1),
 }
 
 const ViewToggle = ({ view, onChange }) => (
@@ -39,11 +50,7 @@ const ViewToggle = ({ view, onChange }) => (
       <Button
         key={value}
         size='sm'
-        bg={view === value ? 'blue.300' : 'blue.700'}
-        color={view === value ? 'black' : 'white'}
-        _hover={{
-          bg: view === value ? 'blue.300' : 'blue.800',
-        }}
+        variant={view === value ? 'solid' : 'ghost'}
         onClick={() => onChange(value)}
         aria-pressed={view === value}
       >
@@ -52,6 +59,52 @@ const ViewToggle = ({ view, onChange }) => (
       </Button>
     ))}
   </HStack>
+)
+
+const layoutStyle = (view) =>
+  view === 'gallery'
+    ? {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+        gap: '24px',
+      }
+    : { display: 'flex', flexDirection: 'column', gap: '16px' }
+
+// Placeholder cards shaped like the real ones while events load
+const LoadingCards = ({ view }) => (
+  <Box style={layoutStyle(view)} aria-busy='true' aria-label='Loading events'>
+    {Array.from({ length: 6 }, (_, i) => (
+      <Flex
+        key={i}
+        direction={view === 'list' ? { base: 'column', sm: 'row' } : 'column'}
+        borderWidth='1px'
+        borderRadius='2xl'
+        overflow='hidden'
+      >
+        <Skeleton
+          {...(view === 'list'
+            ? { w: { base: '100%', sm: '280px' }, h: '170px' }
+            : { aspectRatio: 16 / 10 })}
+          borderRadius={0}
+        />
+        <VStack align='stretch' gap={3} p={5} flex='1'>
+          <Skeleton h='3' w='35%' />
+          <Skeleton h='5' w='85%' />
+          <SkeletonText noOfLines={2} gap={2} />
+        </VStack>
+      </Flex>
+    ))}
+  </Box>
+)
+
+const Message = ({ icon: Icon, title, children }) => (
+  <VStack py={16} gap={3} color='fg.muted' textAlign='center'>
+    <Icon size={40} />
+    <Heading size='md' color='fg'>
+      {title}
+    </Heading>
+    {children}
+  </VStack>
 )
 
 const container = {
@@ -71,7 +124,114 @@ const EventResults = ({
   onClearFilters,
   onRequireAuth,
 }) => {
-  const events = useMemo(() => applyFilters(mockEvents, filters), [filters])
+  const { city, category, sort } = filters
+  const [pagination, setPagination] = useState({ filterKey: null, page: 0 })
+  const [retryCount, setRetryCount] = useState(0)
+
+  const filterKey = JSON.stringify([query, city, category])
+  const page = pagination.filterKey === filterKey ? pagination.page : 0
+  const changePage = (getNextPage) =>
+    setPagination((current) => {
+      const currentPage = current.filterKey === filterKey ? current.page : 0
+      return { filterKey, page: getNextPage(currentPage) }
+    })
+
+  // Which request the current state belongs to. When the search or filters
+  // change, the key changes and we're "loading" until the new result lands.
+  const requestKey = JSON.stringify([filterKey, page, retryCount])
+  const [result, setResult] = useState({ key: null, events: [], error: null })
+  const loading = result.key !== requestKey
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchEvents(
+      { city, category, query, page, size: PAGE_SIZE },
+      { signal: controller.signal }
+    )
+      .then(({ events }) => setResult({ key: requestKey, events, error: null }))
+      .catch((err) => {
+        if (err.name === 'AbortError') return // a newer request replaced it
+        console.error('Could not load events:', err)
+        setResult({ key: requestKey, events: [], error: err.message })
+      })
+    return () => controller.abort()
+  }, [city, category, query, page, requestKey])
+
+  const events = useMemo(
+    () =>
+      sort && sorters[sort]
+        ? [...result.events].sort(sorters[sort])
+        : result.events,
+    [result.events, sort]
+  )
+
+  const cityLabel = cityOptions.find((o) => o.value === city)?.label ?? city
+  const heading = query
+    ? `Results for “${query}”`
+    : cityLabel
+    ? `Things to do in ${cityLabel}`
+    : 'Popular activities'
+  const hasFilters = Boolean(city || category || sort)
+  const hasPreviousPage = page > 0
+  const hasNextPage = result.events.length === PAGE_SIZE
+
+  let body
+  if (loading) {
+    body = <LoadingCards view={view} />
+  } else if (result.error) {
+    body = (
+      <Message icon={CloudOff} title="Couldn't load activities">
+        <Text maxW='md'>{result.error}</Text>
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => setRetryCount((n) => n + 1)}
+        >
+          Try again
+        </Button>
+      </Message>
+    )
+  } else if (events.length === 0) {
+    body = (
+      <Message
+        icon={SearchX}
+        title={
+          hasFilters
+            ? 'No activities match these filters'
+            : 'No activities found'
+        }
+      >
+        {hasFilters && (
+          <Button variant='outline' size='sm' onClick={onClearFilters}>
+            Clear filters
+          </Button>
+        )}
+      </Message>
+    )
+  } else {
+    body = (
+      <AnimatePresence mode='wait'>
+        <motion.div
+          key={view + requestKey}
+          variants={container}
+          initial='hidden'
+          animate='show'
+          exit={{ opacity: 0, transition: { duration: 0.15 } }}
+          style={layoutStyle(view)}
+        >
+          {events.map((event) => (
+            <motion.div key={event.id} variants={item} layout='position'>
+              <EventCard
+                event={event}
+                view={view}
+                onRequireAuth={onRequireAuth}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    )
+  }
 
   return (
     <Box width='100%'>
@@ -84,56 +244,43 @@ const EventResults = ({
       >
         <Box>
           <Heading size='2xl' letterSpacing='tight'>
-            {query ? `Things to do near “${query}”` : 'Popular activities'}
+            {heading}
           </Heading>
           <Text color='fg.muted' mt={1}>
-            {events.length} {events.length === 1 ? 'activity' : 'activities'}{' '}
-            found
+            {loading
+              ? 'Searching…'
+              : result.error
+              ? ' '
+              : `${events.length} ${
+                  events.length === 1 ? 'activity' : 'activities'
+                } on page ${page + 1}`}
           </Text>
         </Box>
         <ViewToggle view={view} onChange={onViewChange} />
       </Flex>
-
-      {events.length === 0 ? (
-        <VStack py={16} gap={3} color='fg.muted'>
-          <SearchX size={40} />
-          <Heading size='md' color='fg'>
-            No activities match these filters
-          </Heading>
-          <Button variant='outline' size='sm' onClick={onClearFilters}>
-            Clear filters
-          </Button>
-        </VStack>
-      ) : (
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={view + JSON.stringify(filters)}
-            variants={container}
-            initial='hidden'
-            animate='show'
-            exit={{ opacity: 0, transition: { duration: 0.15 } }}
-            style={
-              view === 'gallery'
-                ? {
-                    display: 'grid',
-                    gridTemplateColumns:
-                      'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                    gap: '24px',
-                  }
-                : { display: 'flex', flexDirection: 'column', gap: '16px' }
-            }
+      {body}
+      {!loading && !result.error && (events.length > 0 || hasPreviousPage) && (
+        <HStack justify='center' gap={3} mt={8}>
+          <Button
+            variant='outline'
+            onClick={() => changePage((current) => Math.max(0, current - 1))}
+            disabled={!hasPreviousPage}
           >
-            {events.map((event) => (
-              <motion.div key={event.id} variants={item}>
-                <EventCard
-                  event={event}
-                  view={view}
-                  onRequireAuth={onRequireAuth}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
+            <ChevronLeft size={16} />
+            Previous
+          </Button>
+          <Text color='fg.muted' minW='80px' textAlign='center'>
+            Page {page + 1}
+          </Text>
+          <Button
+            variant='outline'
+            onClick={() => changePage((current) => current + 1)}
+            disabled={!hasNextPage}
+          >
+            Next
+            <ChevronRight size={16} />
+          </Button>
+        </HStack>
       )}
     </Box>
   )
