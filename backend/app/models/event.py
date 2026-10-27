@@ -9,6 +9,7 @@ class Event(BaseModel):
     venue: str
     date: str
     category: str
+    time: str | None = None
     address: str | None = None
     pricing: str | None = None
     ticket_link: str | None = None

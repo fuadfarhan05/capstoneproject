@@ -192,6 +192,7 @@ def test_events_ticketmaster_source_returns_events():
             "city": "Chicago",
             "venue": "Mock Venue",
             "date": "2026-10-22",
+            "time": "19:30:00",
             "category": "music",
             "address": "500 Mock St, Chicago, IL 60601",
             "pricing": "25.00 - 75.00 USD",

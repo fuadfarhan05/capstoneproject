@@ -4,6 +4,7 @@ import SaveButton from './SaveButton'
 import {
   getCoverBackground,
   formatEventDate,
+  formatEventTime,
   formatPricing,
   formatCategory,
 } from '../utils/eventDisplay'
@@ -73,7 +74,7 @@ const Eyebrow = ({ event }) => (
     color='fg.muted'
   >
     {formatEventDate(event.date)}
-    {event.time && ` · ${event.time}`}
+    {event.time && ` · ${formatEventTime(event.time)}`}
   </Text>
 )
 

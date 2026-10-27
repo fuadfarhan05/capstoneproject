@@ -110,6 +110,7 @@ def test_normalize_ticketmaster_event():
         "dates": {
             "start": {
                 "localDate": "2026-10-12",
+                "localTime": "19:30:00",
             }
         },
         "classifications": [
@@ -165,6 +166,7 @@ def test_normalize_ticketmaster_event():
         "city": "Chicago",
         "venue": "United Center",
         "date": "2026-10-12",
+        "time": "19:30:00",
         "category": "music",
         "address": "1901 W Madison St, Chicago, IL 60612",
         "pricing": "25.00 - 75.00 USD",
@@ -204,6 +206,7 @@ def test_normalize_ticketmaster_event_handles_missing_optional_fields():
         "city": "New York City",
         "venue": "",
         "date": "2026-10-15",
+        "time": None,
         "category": "unknown",
         "address": None,
         "pricing": "unknown",

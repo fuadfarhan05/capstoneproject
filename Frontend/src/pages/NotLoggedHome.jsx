@@ -71,10 +71,12 @@ const NotLoggedHome = () => {
       [key]: value,
     }))
 
-  const handleSearch = () => {
+  const handleSearch = (event) => {
+    event.preventDefault()
+
     navigate('/search', {
       state: {
-        query: search,
+        query: search.trim(),
         filters: filters,
       },
     })
