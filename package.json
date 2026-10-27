@@ -1,0 +1,12 @@
+{
+    "scripts": {
+        "setup": "npm install --prefix Frontend",
+        "dev": "npm run dev --prefix Frontend",
+        "build": "npm run build --prefix Frontend",
+        "lint": "npm run lint --prefix Frontend"
+    },
+    "dependencies": {
+        "lucide-react": "^1.57.0",
+        "next-themes": "^0.4.6"
+    }
+}
