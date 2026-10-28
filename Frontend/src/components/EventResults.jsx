@@ -123,14 +123,14 @@ const EventResults = ({
   onViewChange,
   onClearFilters,
   onRequireAuth,
-}) => {
+}) => {  // Loads, filters, sorts, and paginates live events for the results page.
   const { city, category, sort } = filters
   const [pagination, setPagination] = useState({ filterKey: null, page: 0 })
   const [retryCount, setRetryCount] = useState(0)
 
   const filterKey = JSON.stringify([query, city, category])
   const page = pagination.filterKey === filterKey ? pagination.page : 0
-  const changePage = (getNextPage) =>
+  const changePage = (getNextPage) =>  // Moves pages while keeping the current filter set attached.
     setPagination((current) => {
       const currentPage = current.filterKey === filterKey ? current.page : 0
       return { filterKey, page: getNextPage(currentPage) }
@@ -139,7 +139,12 @@ const EventResults = ({
   // Which request the current state belongs to. When the search or filters
   // change, the key changes and we're "loading" until the new result lands.
   const requestKey = JSON.stringify([filterKey, page, retryCount])
-  const [result, setResult] = useState({ key: null, events: [], error: null })
+  const [result, setResult] = useState({
+    key: null,
+    events: [],
+    hasNext: false,
+    error: null,
+  })
   const loading = result.key !== requestKey
 
   useEffect(() => {
@@ -148,11 +153,18 @@ const EventResults = ({
       { city, category, query, page, size: PAGE_SIZE },
       { signal: controller.signal }
     )
-      .then(({ events }) => setResult({ key: requestKey, events, error: null }))
+      .then(({ events, hasNext }) =>
+        setResult({ key: requestKey, events, hasNext, error: null })
+      )
       .catch((err) => {
         if (err.name === 'AbortError') return // a newer request replaced it
         console.error('Could not load events:', err)
-        setResult({ key: requestKey, events: [], error: err.message })
+        setResult({
+          key: requestKey,
+          events: [],
+          hasNext: false,
+          error: err.message,
+        })
       })
     return () => controller.abort()
   }, [city, category, query, page, requestKey])
@@ -173,7 +185,7 @@ const EventResults = ({
     : 'Popular activities'
   const hasFilters = Boolean(city || category || sort)
   const hasPreviousPage = page > 0
-  const hasNextPage = result.events.length === PAGE_SIZE
+  const hasNextPage = result.hasNext
 
   let body
   if (loading) {

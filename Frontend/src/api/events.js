@@ -10,7 +10,7 @@ export const API_BASE_URL =
 export async function fetchEvents(
   { city, category, query, page = 0, size = 20 } = {},
   { signal } = {},
-) {
+) {  // Fetches one event page and converts backend pagination names for React.
   const params = new URLSearchParams({
     source: 'ticketmaster',
     page: String(page),
@@ -40,8 +40,11 @@ export async function fetchEvents(
 
   const data = await response.json()
   return {
-    events: data.events ?? [],
-    page,
-    size,
+    events: Array.isArray(data.events) ? data.events : [],
+    page: data.page ?? page,
+    size: data.size ?? size,
+    totalPages: data.total_pages ?? null,
+    totalElements: data.total_elements ?? null,
+    hasNext: data.has_next ?? false,
   }
 }

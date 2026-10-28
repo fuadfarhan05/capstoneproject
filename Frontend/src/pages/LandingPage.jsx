@@ -14,6 +14,12 @@ import AuthModal from '../components/AuthModal'
 import AccountButtons from '../components/AccountButtons'
 import Filter from '../components/Filter'
 import { SearchBar } from '../components/index'
+import {
+  categoryOptions,
+  cityOptions,
+  emptyFilters,
+  sortOptions,
+} from '../data/filterOptions'
 
 const words = [
   'a beach',
@@ -26,14 +32,7 @@ const words = [
   'an amusement park',
 ]
 
-const emptyFilters = {
-  city: '',
-  distance: '',
-  price: '',
-  sort: '',
-}
-
-const LandingPage = () => {
+const LandingPage = () => {  // Collects a search and supported filters before opening the results page.
   const navigate = useNavigate()
 
   const [authOpen, setAuthOpen] = useState(false)
@@ -68,13 +67,13 @@ const LandingPage = () => {
     }
   }, [])
 
-  const setFilter = (key) => (value) =>
+  const setFilter = (key) => (value) =>  // Updates one filter without clearing the others.
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }))
 
-  const handleSearch = (e) => {
+  const handleSearch = (e) => {  // Preserves the search and filters while navigating to results.
     e.preventDefault()
 
     navigate('/results', {
@@ -241,13 +240,27 @@ const LandingPage = () => {
             Filters:
           </Text>
 
-          <Filter filter='city' onChange={setFilter('city')} />
+          <Filter
+            filter='city'
+            value={filters.city}
+            options={cityOptions}
+            onChange={setFilter('city')}
+          />
 
-          <Filter filter='distance' onChange={setFilter('distance')} />
+          <Filter
+            filter='category'
+            value={filters.category}
+            options={categoryOptions}
+            placeholder='Category'
+            onChange={setFilter('category')}
+          />
 
-          <Filter filter='price' onChange={setFilter('price')} />
-
-          <Filter filter='sort' onChange={setFilter('sort')} />
+          <Filter
+            filter='sort'
+            value={filters.sort}
+            options={sortOptions}
+            onChange={setFilter('sort')}
+          />
         </HStack>
       </VStack>
 
