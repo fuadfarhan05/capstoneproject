@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from app.auth import get_current_user
 from app.routes.events import router as events_router
 from app.routes.health import router as health_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +16,10 @@ app.add_middleware( #tells FastAPI which frontend addresses we trust, and regist
 )
 
 app.include_router(health_router)
-app.include_router(events_router, prefix="/api")
+# Every /api route requires a valid Firebase token. /health stays public.
+app.include_router(events_router, prefix="/api", dependencies=[Depends(get_current_user)])
 
 
 @app.get("/")
 async def root():
     return {"message": "Travel Activity Discovery API"}
-
-
