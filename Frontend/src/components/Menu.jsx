@@ -10,8 +10,11 @@ import {
   Box,
   Switch,
   Separator,
+  ButtonGroup,
 } from '@chakra-ui/react'
 import { Link } from 'react-router-dom'
+import { signOut } from 'firebase/auth'
+import { auth } from '../firebase'
 import menuImage from '../assets/menuImage.png'
 import {
   Bookmark,
@@ -23,25 +26,31 @@ import {
 } from 'lucide-react'
 import Airplane from '../assets/pngwing.com.png'
 import { useAuth } from '../AuthContext'
-import { UserTile } from '../components/index'
+import { UserTile, AuthModal } from '../components/index'
 
 const Menu = () => {
-  const [open, setOpen] = useState(false)
-  const { user, loading } = useAuth()
+  const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
+  const [open, setOpen] = useState(false)
+  const { user } = useAuth()
 
   const openAuth = (mode) => {
     setAuthMode(mode)
-    // setAuthOpen(true)
+    setAuthOpen(true)
+    setOpen(false)
   }
 
-  const handleSignOut = () => {}
-
-  const onSignIn = () => {}
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth)
+      setOpen(false)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
 
   return (
     <>
-      {' '}
       {/* Menu image button */}
       <IconButton
         variant='ghost'
@@ -50,19 +59,21 @@ const Menu = () => {
       >
         <Image src={menuImage} alt='Menu' boxSize='32px' />
       </IconButton>
+
       {/* Menu drawer */}
       <Drawer.Root open={open} onOpenChange={(e) => setOpen(e.open)}>
         <Drawer.Backdrop />
 
         <Drawer.Positioner>
-          <Drawer.Content position='relative' overflow='visible'>
+          <Drawer.Content position='relative' overflow='visible' bg='gray.100'>
             <Drawer.Header>
               <Box spaceY={4}>
                 <Drawer.Title fontSize='2xl'>Menu</Drawer.Title>
                 {user && <UserTile user={user} />}
               </Box>
             </Drawer.Header>
-            <Separator />
+
+            <Separator borderColor='black' />
 
             <Drawer.Body>
               <VStack align='stretch' gap={4}>
@@ -81,6 +92,7 @@ const Menu = () => {
                     transform: 'translateY(-2px)',
                     boxShadow: 'md',
                   }}
+                  onClick={() => setOpen(false)}
                 >
                   <House size={20} />
                   <Text>Home</Text>
@@ -101,6 +113,7 @@ const Menu = () => {
                     transform: 'translateY(-2px)',
                     boxShadow: 'md',
                   }}
+                  onClick={() => setOpen(false)}
                 >
                   <Search size={20} />
                   <Text>Search</Text>
@@ -122,6 +135,7 @@ const Menu = () => {
                     transform: 'translateY(-2px)',
                     boxShadow: 'md',
                   }}
+                  onClick={() => setOpen(false)}
                 >
                   <Bookmark size={20} />
                   <Text>Saved Activities</Text>
@@ -142,6 +156,7 @@ const Menu = () => {
                     transform: 'translateY(-2px)',
                     boxShadow: 'md',
                   }}
+                  onClick={() => setOpen(false)}
                 >
                   <PlaneTakeoff size={20} />
                   <Text>Plans</Text>
@@ -162,13 +177,16 @@ const Menu = () => {
                     transform: 'translateY(-2px)',
                     boxShadow: 'md',
                   }}
+                  onClick={() => setOpen(false)}
                 >
                   <UserPen size={20} />
                   <Text>Profile</Text>
                 </HStack>
               </VStack>
-              <Separator />
+
+              <Separator borderColor='black' />
             </Drawer.Body>
+
             {!user ? (
               <Box
                 height='120%'
@@ -178,7 +196,6 @@ const Menu = () => {
                 pointerEvents='none'
                 backgroundImage={`url(${Airplane})`}
                 backgroundSize='60%'
-                // backgroundPosition='100% center'
                 backgroundPositionX='90%'
                 backgroundPositionY='55%'
                 backgroundRepeat='no-repeat'
@@ -194,7 +211,6 @@ const Menu = () => {
                 pointerEvents='none'
                 backgroundImage={`url(${Airplane})`}
                 backgroundSize='45%'
-                // backgroundPosition='100% center'
                 backgroundPositionX='100%'
                 backgroundPositionY='58%'
                 backgroundRepeat='no-repeat'
@@ -202,22 +218,68 @@ const Menu = () => {
                 overflow='visible'
               />
             )}
+
             <Drawer.Footer>
               <Switch.Root>
                 <Switch.HiddenInput />
-              </Switch.Root>{' '}
+              </Switch.Root>
+
               {user ? (
-                <Button onClick={handleSignOut}>Sign Out</Button>
+                <Button
+                  variant='outline'
+                  color='#2879CF'
+                  borderColor='#2879CF'
+                  _hover={{
+                    bg: '#2879CF',
+                    color: 'white',
+                  }}
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </Button>
               ) : (
-                <Button onClick={onSignIn}>Sign In</Button>
+                <Button
+                  bg='#2879CF'
+                  color='white'
+                  boxShadow='0 8px 20px rgba(40,121,207,0.25)'
+                  _hover={{
+                    bg: '#1E65B0',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 24px rgba(40,121,207,0.32)',
+                  }}
+                  onClick={() => openAuth('login')}
+                >
+                  Log in
+                </Button>
               )}
-              <Button variant='solid' onClick={() => setOpen(false)}>
-                Close
-              </Button>
+
+              <ButtonGroup colorPalette={'#2879CF'}>
+                <Button
+                  bg='white'
+                  color='black'
+                  boxShadow='0 8px 20px rgba(40,121,207,0.25)'
+                  _hover={{
+                    bg: 'gray.100',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 24px rgba(40,121,207,0.32)',
+                  }}
+                  onClick={() => setOpen(false)}
+                >
+                  Close
+                </Button>
+              </ButtonGroup>
             </Drawer.Footer>
           </Drawer.Content>
         </Drawer.Positioner>
       </Drawer.Root>
+
+      {/* Authentication popup */}
+      <AuthModal
+        open={authOpen}
+        mode={authMode}
+        onModeChange={setAuthMode}
+        onClose={() => setAuthOpen(false)}
+      />
     </>
   )
 }

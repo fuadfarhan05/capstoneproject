@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import {
   Profile,
-  SavedActivies,
+  SavedActivities,
   Results,
   LandingPage,
   Plans,
@@ -17,7 +17,7 @@ const App = () => {
         <Route path='/plans' element={<Plans />} />
         <Route path='/results' element={<Results />} />
         <Route path='/profile' element={<Profile />} />
-        <Route path='/saved-activies' element={<SavedActivies />} />
+        <Route path='/saved-activities' element={<SavedActivities />} />
       </Route>
     </Routes>
   )

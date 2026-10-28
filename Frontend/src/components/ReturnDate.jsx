@@ -10,7 +10,7 @@ const ReturnDate = ({ value, onChange, edit }) => {
     >
       {!edit && <Heading>Return Date</Heading>}
       <DatePicker.Control>
-        <DatePicker.Input borderRadius='full' />
+        <DatePicker.Input borderRadius='full' bg='white' />
         <DatePicker.IndicatorGroup>
           <DatePicker.Trigger borderRadius='full'>
             <LuCalendar />

@@ -98,7 +98,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content borderRadius='2xl' mx={4}>
+          <Dialog.Content borderRadius='2xl' mx={4} bg='gray.100'>
             <form onSubmit={handleSubmit}>
               <Dialog.Header justifyContent='center'>
                 <Dialog.Title>{isSignUp ? 'Sign up' : 'Log in'}</Dialog.Title>
@@ -109,6 +109,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
                   <Field.Root>
                     <Field.Label>Email</Field.Label>
                     <Input
+                      bg='white'
                       type='email'
                       placeholder='Enter your email'
                       borderRadius='full'
@@ -121,6 +122,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
                   <Field.Root>
                     <Field.Label>Password</Field.Label>
                     <Input
+                      bg='white'
                       type='password'
                       placeholder='Enter your password'
                       borderRadius='full'
@@ -134,6 +136,7 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
                     <Field.Root>
                       <Field.Label>Confirm Password</Field.Label>
                       <Input
+                        bg='white'
                         type='password'
                         placeholder='Confirm your password'
                         borderRadius='full'
@@ -149,7 +152,19 @@ const AuthModal = ({ open, mode, onModeChange, onClose }) => {
               </Dialog.Body>
 
               <Dialog.Footer flexDirection='column' gap={3}>
-                <Button type='submit' w='full' loading={loading}>
+                <Button
+                  type='submit'
+                  w='full'
+                  loading={loading}
+                  bg='#2879CF'
+                  color='white'
+                  boxShadow='0 8px 20px rgba(40,121,207,0.25)'
+                  _hover={{
+                    bg: '#1E65B0',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 24px rgba(40,121,207,0.32)',
+                  }}
+                >
                   {isSignUp ? 'Sign up' : 'Log in'}
                 </Button>
 
