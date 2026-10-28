@@ -34,9 +34,11 @@ const Navbar = () => {
             ml={4}
             asChild
             size={{ base: 'xl', md: '3xl' }}
-            cursor='pointer'
+            fontWeight='extrabold'
+            letterSpacing='-0.04em'
+            color='#12304A'
             onClick={() => navigate('/')}
-            color='blue.700'
+            cursor='pointer'
           >
             <motion.h1 layout transition={layoutTransition}>
               Triply
@@ -59,7 +61,7 @@ const Navbar = () => {
           onModeChange={setAuthMode}
           onClose={() => setAuthOpen(false)}
         />
-        <Separator />
+        <Separator borderColor='black' />
         <Outlet />
       </VStack>
     </Box>

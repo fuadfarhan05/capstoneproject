@@ -117,6 +117,7 @@ const Plans = () => {
                 value={planName}
                 onChange={(e) => setPlanName(e.target.value)}
                 borderRadius={'full'}
+                bg='white'
               />
             </GridItem>
 
@@ -177,7 +178,13 @@ const Plans = () => {
               ))}
             </SimpleGrid>
           ) : (
-            <Box borderWidth='1px' borderRadius='lg' p={8} textAlign='center'>
+            <Box
+              borderWidth='1px'
+              borderRadius='lg'
+              p={8}
+              textAlign='center'
+              bg='white'
+            >
               <Text color='gray.500'>Your plans will appear here.</Text>
             </Box>
           )}

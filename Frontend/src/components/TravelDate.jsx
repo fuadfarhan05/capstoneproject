@@ -10,9 +10,9 @@ const TravelDate = ({ value, onChange, edit }) => {
     >
       {!edit && <Heading>Travel Date</Heading>}
       <DatePicker.Control>
-        <DatePicker.Input borderRadius='full' />
+        <DatePicker.Input borderRadius='full' bg='white' />
         <DatePicker.IndicatorGroup>
-          <DatePicker.Trigger borderRadius='full'>
+          <DatePicker.Trigger borderRadius='full' bg='white'>
             <LuCalendar />
           </DatePicker.Trigger>
         </DatePicker.IndicatorGroup>

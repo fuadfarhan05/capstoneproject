@@ -42,7 +42,7 @@ const sorters = {
 }
 
 const ViewToggle = ({ view, onChange }) => (
-  <HStack gap={1} p={1} bg='bg.muted' borderRadius='full'>
+  <HStack gap={1} p={1} bg='white' borderRadius='full'>
     {[
       { value: 'list', label: 'List', Icon: LayoutList },
       { value: 'gallery', label: 'Gallery', Icon: LayoutGrid },
@@ -50,7 +50,13 @@ const ViewToggle = ({ view, onChange }) => (
       <Button
         key={value}
         size='sm'
-        variant={view === value ? 'solid' : 'ghost'}
+        bg={view === value ? '#2879CF' : 'white'}
+        color={view === value ? 'white' : 'gray.600'}
+        variant='ghost'
+        borderRadius='full'
+        _hover={{
+          bg: view === value ? '#2879CF' : 'gray.100',
+        }}
         onClick={() => onChange(value)}
         aria-pressed={view === value}
       >
