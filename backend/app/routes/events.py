@@ -17,19 +17,17 @@ def list_events(
     source: str = "sample",
     page: int = Query(default=0, ge=0),
     size: int = Query(default=20, ge=1, le=200),
-):
-    return {
-        "events": filter_events(
-            city=city,
-            category=category,
-            query=query,
-            start_date=start_date,
-            end_date=end_date,
-            source=source,
-            page=page,
-            size=size,
-        )
-    }
+):  # Returns one filtered page of events with pagination metadata.
+    return filter_events(
+        city=city,
+        category=category,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        source=source,
+        page=page,
+        size=size,
+    )
 
 
 @router.get("/cities", response_model=CityListResponse)

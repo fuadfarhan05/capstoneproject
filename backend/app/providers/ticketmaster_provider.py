@@ -182,7 +182,7 @@ def get_ticketmaster_events(
     end_date: str | None = None,
     page: int | None = None,
     size: int | None = None,
-) -> list[dict]:
+) -> dict:  # Fetches one Ticketmaster page with normalized pagination metadata.
     params = build_ticketmaster_search_params(
         city=city,
         category=category,
@@ -209,4 +209,32 @@ def get_ticketmaster_events(
             "Ticketmaster request failed"
         ) from exc
 
-    return normalize_ticketmaster_response(response.json(), city=city or "")
+
+    response_data = response.json()
+    events = normalize_ticketmaster_response(
+        response_data,
+        city=city or "",
+    )
+
+    page_data = response_data.get("page") or {}
+    requested_page = page if page is not None else 0
+    requested_size = size if size is not None else 20
+
+    current_page = page_data.get("number", requested_page)
+    page_size = page_data.get("size", requested_size)
+    total_pages = page_data.get("totalPages")
+    total_elements = page_data.get("totalElements")
+
+    if total_pages is not None:
+        has_next = current_page + 1 < total_pages
+    else:
+        has_next = len(events) == page_size
+
+    return {
+        "events": events,
+        "page": current_page,
+        "size": page_size,
+        "total_pages": total_pages,
+        "total_elements": total_elements,
+        "has_next": has_next,
+    }
