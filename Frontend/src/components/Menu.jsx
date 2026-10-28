@@ -122,7 +122,7 @@ const Menu = () => {
 
                 <HStack
                   as={Link}
-                  to='/saved-activies'
+                  to='/saved-activities'
                   gap={2}
                   px={4}
                   py={3}
