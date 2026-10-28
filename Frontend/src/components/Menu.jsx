@@ -226,12 +226,13 @@ const Menu = () => {
 
               {user ? (
                 <Button
-                  variant='outline'
-                  color='#2879CF'
-                  borderColor='#2879CF'
+                  bg='#2879CF'
+                  color='white'
+                  boxShadow='0 8px 20px rgba(40,121,207,0.25)'
                   _hover={{
-                    bg: '#2879CF',
-                    color: 'white',
+                    bg: '#1E65B0',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 10px 24px rgba(40,121,207,0.32)',
                   }}
                   onClick={handleSignOut}
                 >
