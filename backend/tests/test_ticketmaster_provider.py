@@ -302,7 +302,7 @@ def test_event_model_accepts_ticketmaster_string_id():
 # Verifies the outgoing HTTP request and normalization without calling Ticketmaster.
 def test_get_ticketmaster_events_sends_request_and_normalizes_response(
     monkeypatch,
-):
+):  # Verifies the outgoing request, normalized event, and pagination metadata.
     monkeypatch.setattr(
         settings,
         "ticketmaster_api_key",
@@ -342,14 +342,20 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
                     },
                 }
             ]
-        }
+        },
+        "page": {
+            "size": 25,
+            "totalElements": 75,
+            "totalPages": 3,
+            "number": 2,
+        },
     }
 
     with patch(
         "app.providers.ticketmaster_provider.httpx.get",
         return_value=fake_response,
     ) as mock_get:
-        events = get_ticketmaster_events(
+        result = get_ticketmaster_events(
             city="Chicago",
             query="music",
             start_date="2026-10-22",
@@ -374,11 +380,16 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
         timeout=10,
     )
 
-    assert len(events) == 1
-    assert events[0]["id"] == "ticketmaster-789"
-    assert events[0]["title"] == "Mock Ticketmaster Event"
-    assert events[0]["city"] == "Chicago"
-    assert events[0]["source"] == "ticketmaster"
+    assert result["page"] == 2
+    assert result["size"] == 25
+    assert result["total_pages"] == 3
+    assert result["total_elements"] == 75
+    assert result["has_next"] is False
+    assert len(result["events"]) == 1
+    assert result["events"][0]["id"] == "ticketmaster-789"
+    assert result["events"][0]["title"] == "Mock Ticketmaster Event"
+    assert result["events"][0]["city"] == "Chicago"
+    assert result["events"][0]["source"] == "ticketmaster"
 
 
 # Verifies that an HTTP timeout becomes our Ticketmaster-specific timeout error.

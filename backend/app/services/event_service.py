@@ -37,6 +37,26 @@ def _parse_date(value: str, field_name: str) -> date:
         )
 
 
+def _build_local_event_page(
+    events: list[dict],
+    page: int,
+    size: int,
+) -> dict:  # Paginates local provider results and creates API metadata.
+    total_elements = len(events)
+    total_pages = (total_elements + size - 1) // size
+    start = page * size
+    end = start + size
+
+    return {
+        "events": events[start:end],
+        "page": page,
+        "size": size,
+        "total_pages": total_pages,
+        "total_elements": total_elements,
+        "has_next": page + 1 < total_pages,
+    }
+
+
 def filter_events(
     city: str | None = None,
     category: str | None = None,
@@ -46,7 +66,7 @@ def filter_events(
     source: str = "sample",
     page: int = 0,
     size: int = 20,
-):
+):  # Filters events and returns a consistently paginated API response.
     if source not in {"sample", "eventbrite", "ticketmaster"}:
         raise HTTPException(
             status_code=400,
@@ -103,7 +123,7 @@ def filter_events(
 
     if source == "eventbrite":
         try:
-            return get_eventbrite_events(
+            eventbrite_events = get_eventbrite_events(
                 city=city,
                 category=category,
                 query=query,
@@ -125,6 +145,12 @@ def filter_events(
                 status_code=502,
                 detail="Eventbrite request failed",
             ) from exc
+
+        return _build_local_event_page(
+            eventbrite_events,
+            page,
+            size,
+        )
 
     filtered_events = get_sample_events()
 
@@ -160,7 +186,11 @@ def filter_events(
             if date.fromisoformat(event["date"]) <= parsed_end_date
         ]
 
-    return filtered_events
+    return _build_local_event_page(
+        filtered_events,
+        page,
+        size,
+    )
 
 
 def get_event_by_id(event_id: int):

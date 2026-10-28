@@ -48,6 +48,35 @@ def test_events_sample_source_uses_sample_data():
     assert all(event["source"] == "sample" for event in data["events"])
 
 
+def test_sample_events_include_pagination_metadata():  # Verifies metadata on the first sample page.
+    response = client.get(
+        "/api/events?source=sample&page=0&size=2"
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data["events"]) == 2
+    assert data["page"] == 0
+    assert data["size"] == 2
+    assert data["total_elements"] == 6
+    assert data["total_pages"] == 3
+    assert data["has_next"] is True
+
+
+def test_sample_events_identify_final_page():  # Verifies that the final sample page has no next page.
+    response = client.get(
+        "/api/events?source=sample&page=2&size=2"
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data["events"]) == 2
+    assert data["page"] == 2
+    assert data["has_next"] is False
+
+
 def test_event_by_id():
     response = client.get("/api/events/1")
 
@@ -183,7 +212,7 @@ def test_eventbrite_timeout_returns_504(): #gives fake token so execution doesnt
 
 
 # Verifies that the Ticketmaster source returns normalized events through the API.
-def test_events_ticketmaster_source_returns_events():
+def test_events_ticketmaster_source_returns_events():  # Verifies normalized Ticketmaster events and page metadata.
     ticketmaster_events = [
         {
             "id": "ticketmaster-123",
@@ -202,9 +231,18 @@ def test_events_ticketmaster_source_returns_events():
         }
     ]
 
+    ticketmaster_page = {
+        "events": ticketmaster_events,
+        "page": 0,
+        "size": 20,
+        "total_pages": 1,
+        "total_elements": 1,
+        "has_next": False,
+    }
+
     with patch(
         "app.services.event_service.get_ticketmaster_events",
-        return_value=ticketmaster_events,
+        return_value=ticketmaster_page,
         create=True,
     ) as mock_get_events:
         response = client.get(
@@ -212,7 +250,7 @@ def test_events_ticketmaster_source_returns_events():
         )
 
     assert response.status_code == 200
-    assert response.json() == {"events": ticketmaster_events}
+    assert response.json() == ticketmaster_page
     mock_get_events.assert_called_once_with(
         city="Chicago",
         category=None,
@@ -225,17 +263,26 @@ def test_events_ticketmaster_source_returns_events():
 
 
 # Verifies that custom pagination values reach the Ticketmaster provider.
-def test_events_ticketmaster_source_passes_pagination():
+def test_events_ticketmaster_source_passes_pagination():  # Verifies custom pagination reaches Ticketmaster.
+    empty_page = {
+        "events": [],
+        "page": 2,
+        "size": 25,
+        "total_pages": 2,
+        "total_elements": 50,
+        "has_next": False,
+    }
+
     with patch(
         "app.services.event_service.get_ticketmaster_events",
-        return_value=[],
+        return_value=empty_page,
     ) as mock_get_events:
         response = client.get(
             "/api/events?source=ticketmaster&page=2&size=25"
         )
 
     assert response.status_code == 200
-    assert response.json() == {"events": []}
+    assert response.json() == empty_page
     mock_get_events.assert_called_once_with(
         city=None,
         category=None,
