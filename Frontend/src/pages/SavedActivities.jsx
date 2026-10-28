@@ -73,7 +73,6 @@ const SavedActivities = ({ savedActivities = [] }) => {
             >
               Log in
             </Button>
-
             <Button
               bg='white'
               color='black'
