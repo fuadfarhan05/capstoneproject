@@ -32,7 +32,7 @@ const words = [
   'an amusement park',
 ]
 
-const LandingPage = () => {  // Collects a search and supported filters before opening the results page.
+const LandingPage = () => {
   const navigate = useNavigate()
 
   const [authOpen, setAuthOpen] = useState(false)
@@ -67,13 +67,14 @@ const LandingPage = () => {  // Collects a search and supported filters before o
     }
   }, [])
 
-  const setFilter = (key) => (value) =>  // Updates one filter without clearing the others.
+  const setFilter = (key) => (value) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }))
+  }
 
-  const handleSearch = (e) => {  // Preserves the search and filters while navigating to results.
+  const handleSearch = (e) => {
     e.preventDefault()
 
     navigate('/results', {
@@ -166,7 +167,7 @@ const LandingPage = () => {  // Collects a search and supported filters before o
             <Stack direction={{ base: 'column', md: 'row' }} align='stretch'>
               <Box position='relative' flex='1'>
                 <SearchBar
-                  width='800px'
+                  width='100%'
                   color='white'
                   value={search}
                   onChange={setSearch}
@@ -223,7 +224,7 @@ const LandingPage = () => {  // Collects a search and supported filters before o
           </form>
         </Box>
 
-        {/* Filters - using the same Filter component as Results */}
+        {/* Filters */}
         <HStack
           justify='center'
           align='center'

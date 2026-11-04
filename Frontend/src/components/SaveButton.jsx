@@ -4,12 +4,31 @@ import { motion } from 'motion/react'
 import { useAuth } from '../AuthContext'
 import { useSavedEvents } from '../SavedEventsContext'
 
-// onRequireAuth is called instead of saving when nobody is logged in,
-// so the page can open its login modal
-const SaveButton = ({ event, onRequireAuth, ...props }) => {
+const SaveButton = ({ event, onRequireAuth, onSaved, ...props }) => {
   const { user } = useAuth()
   const { isSaved, toggleSave } = useSavedEvents()
   const saved = isSaved(event.id)
+
+  const handleClick = async (e) => {
+    e.stopPropagation()
+
+    if (!user) {
+      onRequireAuth?.()
+      return
+    }
+
+    if (saved) {
+      await toggleSave(event)
+      return
+    }
+
+    try {
+      await toggleSave(event)
+      onSaved?.()
+    } catch (error) {
+      console.error('Could not save event:', error)
+    }
+  }
 
   return (
     <IconButton
@@ -21,18 +40,9 @@ const SaveButton = ({ event, onRequireAuth, ...props }) => {
       shadow='sm'
       _hover={{ bg: 'white', transform: 'scale(1.08)' }}
       transition='transform 0.15s ease, background 0.15s ease'
-      onClick={(e) => {
-        // the card itself will be clickable later; don't trigger it
-        e.stopPropagation()
-        if (!user) {
-          onRequireAuth?.()
-          return
-        }
-        toggleSave(event)
-      }}
+      onClick={handleClick}
       {...props}
     >
-      {/* key on `saved` so the icon pops each time it's toggled */}
       <motion.span
         key={String(saved)}
         initial={{ scale: 0.6 }}
