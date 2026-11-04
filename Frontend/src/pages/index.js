@@ -1,4 +1,3 @@
-export { default as NotLoggedHome } from './NotLoggedHome'
 export { default as Profile } from './Profile'
 export { default as SavedActivities } from './SavedActivities'
 export { default as Results } from './Results'
