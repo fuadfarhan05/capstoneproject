@@ -4,6 +4,7 @@ from unittest.mock import patch
 from app.core.config import settings
 from app.providers.ticketmaster_provider import (
     TicketmasterConfigurationError,
+    TicketmasterNotFoundError,
     TicketmasterRequestError,
     TicketmasterTimeoutError,
 )
@@ -77,8 +78,38 @@ def test_sample_events_identify_final_page():  # Verifies that the final sample 
     assert data["has_next"] is False
 
 
-def test_event_by_id():
-    response = client.get("/api/events/1")
+# Verifies that the detail endpoint uses Ticketmaster by default.
+def test_event_by_id_defaults_to_ticketmaster():
+    ticketmaster_event = {
+        "id": "ticketmaster-123",
+        "title": "Mock Ticketmaster Event",
+        "description": "A normalized event returned by the provider.",
+        "city": "Chicago",
+        "venue": "Mock Venue",
+        "date": "2026-11-10",
+        "time": "19:30:00",
+        "category": "music",
+        "address": "500 Mock St, Chicago, IL 60601",
+        "pricing": "25.00 - 75.00 USD",
+        "ticket_link": "https://ticketmaster.com/mock-event",
+        "photos": [],
+        "source": "ticketmaster",
+    }
+
+    with patch(
+        "app.services.event_service.get_ticketmaster_event",
+        return_value=ticketmaster_event,
+    ) as mock_get_event:
+        response = client.get("/api/events/ticketmaster-123")
+
+    assert response.status_code == 200
+    assert response.json() == ticketmaster_event
+    mock_get_event.assert_called_once_with("ticketmaster-123")
+
+
+# Verifies that sample details remain available through an explicit source.
+def test_sample_event_by_id():
+    response = client.get("/api/events/1?source=sample")
 
     assert response.status_code == 200
 
@@ -87,11 +118,84 @@ def test_event_by_id():
     assert data["title"] == "NYC Career Fair"
 
 
-def test_missing_event_returns_404():
-    response = client.get("/api/events/999")
+# Verifies that a missing sample event returns the shared not-found response.
+def test_missing_sample_event_returns_404():
+    response = client.get("/api/events/999?source=sample")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Event not found"
+
+
+# Verifies that a missing Ticketmaster event becomes a 404 response.
+def test_missing_ticketmaster_event_returns_404():
+    with patch(
+        "app.services.event_service.get_ticketmaster_event",
+        side_effect=TicketmasterNotFoundError(
+            "Ticketmaster event was not found"
+        ),
+    ):
+        response = client.get("/api/events/missing-event")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Event not found"}
+
+
+# Verifies that detail requests reject providers without detail support.
+def test_event_detail_rejects_invalid_source():
+    response = client.get("/api/events/event-123?source=eventbrite")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": "source must be 'sample' or 'ticketmaster'"
+    }
+
+
+# Verifies that missing Ticketmaster configuration becomes a 503 detail response.
+def test_event_detail_requires_ticketmaster_api_key():
+    with patch(
+        "app.services.event_service.get_ticketmaster_event",
+        side_effect=TicketmasterConfigurationError(
+            "TICKETMASTER_API_KEY is not configured"
+        ),
+    ):
+        response = client.get("/api/events/event-123")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Ticketmaster is not configured"
+    }
+
+
+# Verifies that a Ticketmaster detail timeout becomes a 504 response.
+def test_event_detail_timeout_returns_504():
+    with patch(
+        "app.services.event_service.get_ticketmaster_event",
+        side_effect=TicketmasterTimeoutError(
+            "Ticketmaster request timed out"
+        ),
+    ):
+        response = client.get("/api/events/event-123")
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": "Ticketmaster request timed out"
+    }
+
+
+# Verifies that other Ticketmaster detail failures become a 502 response.
+def test_event_detail_request_error_returns_502():
+    with patch(
+        "app.services.event_service.get_ticketmaster_event",
+        side_effect=TicketmasterRequestError(
+            "Ticketmaster request failed"
+        ),
+    ):
+        response = client.get("/api/events/event-123")
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Ticketmaster request failed"
+    }
 
 
 def test_filter_events_by_city():

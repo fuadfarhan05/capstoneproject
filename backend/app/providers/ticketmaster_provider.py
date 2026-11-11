@@ -1,9 +1,15 @@
+from urllib.parse import quote
+
 import httpx
 
 from app.core.config import settings
 
 TICKETMASTER_SEARCH_URL = (
     "https://app.ticketmaster.com/discovery/v2/events.json"
+)
+
+TICKETMASTER_EVENT_URL = (
+    "https://app.ticketmaster.com/discovery/v2/events/{event_id}.json"
 )
 
 
@@ -13,6 +19,10 @@ class TicketmasterConfigurationError(RuntimeError):
 
 class TicketmasterRequestError(RuntimeError):
     """Raised when a Ticketmaster HTTP request fails."""
+
+
+class TicketmasterNotFoundError(TicketmasterRequestError):
+    """Raised when Ticketmaster does not contain the requested event."""
 
 
 class TicketmasterTimeoutError(TicketmasterRequestError):
@@ -238,3 +248,44 @@ def get_ticketmaster_events(
         "total_elements": total_elements,
         "has_next": has_next,
     }
+
+
+# Fetches and normalizes one Ticketmaster event by its ID.
+def get_ticketmaster_event(
+    event_id: str,
+) -> dict:
+    params = build_ticketmaster_search_params()
+    safe_event_id = quote(event_id, safe="")
+    event_url = TICKETMASTER_EVENT_URL.format(
+        event_id=safe_event_id,
+    )
+
+    try:
+        response = httpx.get(
+            event_url,
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise TicketmasterTimeoutError(
+            "Ticketmaster request timed out"
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise TicketmasterNotFoundError(
+                "Ticketmaster event was not found"
+            ) from exc
+
+        raise TicketmasterRequestError(
+            "Ticketmaster request failed"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise TicketmasterRequestError(
+            "Ticketmaster request failed"
+        ) from exc
+
+    return normalize_ticketmaster_event(
+        response.json(),
+        city="",
+    )
