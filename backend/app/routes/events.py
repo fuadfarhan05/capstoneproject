@@ -35,9 +35,13 @@ def list_cities():
     return {"cities": get_cities()}
 
 
+# Returns one normalized Ticketmaster or sample event by string ID.
 @router.get("/events/{event_id}", response_model=Event)
-def get_event(event_id: int):
-    event = get_event_by_id(event_id)
+def get_event(
+    event_id: str,
+    source: str = "ticketmaster",
+):
+    event = get_event_by_id(event_id, source=source)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
 

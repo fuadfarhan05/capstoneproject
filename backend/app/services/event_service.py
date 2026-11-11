@@ -11,8 +11,10 @@ from app.providers.eventbrite_provider import (
 )
 from app.providers.ticketmaster_provider import (
     TicketmasterConfigurationError,
+    TicketmasterNotFoundError,
     TicketmasterRequestError,
     TicketmasterTimeoutError,
+    get_ticketmaster_event,
     get_ticketmaster_events,
 )
 
@@ -193,9 +195,40 @@ def filter_events(
     )
 
 
-def get_event_by_id(event_id: int):
+# Retrieves one normalized event from the requested detail provider.
+def get_event_by_id(
+    event_id: str,
+    source: str = "ticketmaster",
+):
+    if source not in {"sample", "ticketmaster"}:
+        raise HTTPException(
+            status_code=400,
+            detail="source must be 'sample' or 'ticketmaster'",
+        )
+
+    if source == "ticketmaster":
+        try:
+            return get_ticketmaster_event(event_id)
+        except TicketmasterNotFoundError:
+            return None
+        except TicketmasterConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Ticketmaster is not configured",
+            ) from exc
+        except TicketmasterTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Ticketmaster request timed out",
+            ) from exc
+        except TicketmasterRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Ticketmaster request failed",
+            ) from exc
+
     for event in get_sample_events():
-        if event["id"] == event_id:
+        if str(event["id"]) == event_id:
             return event
 
     return None

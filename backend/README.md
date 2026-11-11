@@ -44,7 +44,7 @@ GET    /health
 GET    /api/cities
 
 GET    /api/events
-GET    /api/events/{event_id}
+GET    /api/events/{event_id}    Ticketmaster by default
 ```
 
 `GET /api/events` supports these optional query parameters:
@@ -60,6 +60,12 @@ page        zero-based page number; defaults to 0
 size        events per page; defaults to 20; maximum 200
 ```
 
+`GET /api/events/{event_id}` accepts an optional `source` query parameter:
+
+```text
+source      ticketmaster | sample; defaults to ticketmaster
+```
+
 Example event requests:
 
 ```text
@@ -70,7 +76,14 @@ GET /api/events?start_date=2026-10-09&end_date=2026-10-12
 GET /api/events?city=Chicago&start_date=2026-10-01&end_date=2026-10-31
 GET /api/events?source=ticketmaster&city=Chicago&category=music&query=music
 GET /api/events?source=ticketmaster&city=Chicago&page=0&size=20
+GET /api/events/G5vYZ9abc123
+GET /api/events/1?source=sample
 ```
+
+Ticketmaster detail requests accept alphanumeric event IDs and return the same
+normalized `Event` shape used by event searches. A missing event returns `404`.
+Missing Ticketmaster configuration returns `503`, provider timeouts return
+`504`, and other upstream failures return `502`.
 
 ## Provider Direction
 
