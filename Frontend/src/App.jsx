@@ -6,6 +6,7 @@ import {
   Results,
   LandingPage,
   Plans,
+  JoinTrip,
 } from './pages/index'
 
 import { NavBar } from './components/index'
@@ -19,6 +20,7 @@ const App = () => {
 
         <Route element={<NavBar />}>
           <Route path='/plans' element={<Plans />} />
+          <Route path='/plans/join/:planId' element={<JoinTrip />} />
           <Route path='/results' element={<Results />} />
           <Route path='/profile' element={<Profile />} />
           <Route path='/saved-activities' element={<SavedActivities />} />
