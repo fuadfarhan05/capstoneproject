@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   VStack,
   Box,
@@ -13,10 +14,19 @@ import {
   CloseButton,
   Portal,
   Flex,
+  HStack,
+  Badge,
+  Center,
+  Spinner,
+  ButtonGroup,
 } from '@chakra-ui/react'
+import { Users } from 'lucide-react'
 
 import { Destinations, TravelDate, ReturnDate } from '../components/index'
 import usePlans from '../context/usePlans'
+import { useAuth } from '../AuthContext'
+import AuthModal from '../components/AuthModal'
+import TripMembers, { MemberAvatars } from '../components/TripMembers'
 
 const formatActivityDate = (date) => {
   if (!date) return ''
@@ -42,7 +52,7 @@ const formatPlanDate = (date) => {
 
   return `${String(month).padStart(2, '0')}/${String(day).padStart(
     2,
-    '0'
+    '0',
   )}/${year}`
 }
 
@@ -65,14 +75,31 @@ const storePlanDate = (date) => {
 }
 
 const Plans = () => {
-  const { plans, createPlan, updatePlan, deletePlan } = usePlans()
+  const { user, loading: authLoading } = useAuth()
+  const {
+    plans,
+    loading: plansLoading,
+    error: plansError,
+    createPlan,
+    updatePlan,
+    deletePlan,
+    leavePlan,
+  } = usePlans()
+  const location = useLocation()
+
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authMode, setAuthMode] = useState('login')
+  const [actionError, setActionError] = useState('')
 
   const [planName, setPlanName] = useState('')
   const [destination, setDestination] = useState('')
   const [travelDate, setTravelDate] = useState('')
   const [returnDate, setReturnDate] = useState('')
 
-  const [selectedPlanId, setSelectedPlanId] = useState(null)
+  // JoinTrip sends people here with the trip they just joined
+  const [selectedPlanId, setSelectedPlanId] = useState(
+    location.state?.openPlanId ?? null,
+  )
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId)
 
   const [edit, setEdit] = useState(false)
@@ -82,7 +109,7 @@ const Plans = () => {
   const [editReturnDate, setEditReturnDate] = useState('')
 
   // Create a new trip.
-  const handleCreatePlan = (e) => {
+  const handleCreatePlan = async (e) => {
     e.preventDefault()
 
     if (!planName.trim() || !destination || !travelDate || !returnDate) {
@@ -90,16 +117,20 @@ const Plans = () => {
     }
 
     const newPlan = {
-      id: Date.now(),
       name: planName.trim(),
       destination,
       travelDate: storePlanDate(travelDate),
       returnDate: storePlanDate(returnDate),
-      friends: [],
       activities: [],
     }
 
-    createPlan(newPlan)
+    setActionError('')
+    try {
+      await createPlan(newPlan)
+    } catch {
+      setActionError('Could not create the trip. Please try again.')
+      return
+    }
 
     setPlanName('')
     setDestination('')
@@ -123,13 +154,14 @@ const Plans = () => {
   const handleSave = () => {
     if (!selectedPlan || !editPlanName.trim()) return
 
+    // the snapshot listener updates the UI; errors are logged by the provider
     updatePlan({
       ...selectedPlan,
       name: editPlanName.trim(),
       destination: editDestination,
       travelDate: storePlanDate(editTravelDate),
       returnDate: storePlanDate(editReturnDate),
-    })
+    }).catch(() => {})
 
     setEdit(false)
   }
@@ -139,27 +171,86 @@ const Plans = () => {
     if (!selectedPlan) return
 
     const updatedActivities = (selectedPlan.activities || []).filter(
-      (activity, index) => String(activity.id ?? index) !== String(activityId)
+      (activity, index) => String(activity.id ?? index) !== String(activityId),
     )
 
     updatePlan({
       ...selectedPlan,
       activities: updatedActivities,
-    })
+    }).catch(() => {})
   }
 
   // Delete the entire trip from the details dialog.
   const handleDelete = () => {
     if (!selectedPlan) return
 
-    deletePlan(selectedPlan.id)
+    deletePlan(selectedPlan.id).catch(() => {})
     setSelectedPlanId(null)
     setEdit(false)
   }
 
+  // Non-organizers leave instead of deleting the trip for everyone
+  const handleLeave = () => {
+    if (!selectedPlan) return
+
+    leavePlan(selectedPlan.id).catch(() => {})
+    setSelectedPlanId(null)
+    setEdit(false)
+  }
+
+  const isOwner = selectedPlan?.ownerId === user?.uid
+
   const closePlan = () => {
     setSelectedPlanId(null)
     setEdit(false)
+  }
+
+  if (authLoading) {
+    return (
+      <Center pt='25vh'>
+        <Spinner size='lg' />
+      </Center>
+    )
+  }
+
+  // Trips are saved to your account so they can be shared with friends
+  if (!user) {
+    return (
+      <VStack gap={4} pt={{ base: '10vh', md: '15vh' }} textAlign='center'>
+        <Center boxSize={20} borderRadius='full' bg='bg.muted'>
+          <Users size={36} />
+        </Center>
+        <Heading size='2xl'>Log in to plan trips</Heading>
+        <Text color='fg.muted' maxW='md'>
+          Create trips, add activities, and plan together with friends.
+        </Text>
+        <ButtonGroup mt={2}>
+          <Button
+            variant='outline'
+            onClick={() => {
+              setAuthMode('login')
+              setAuthOpen(true)
+            }}
+          >
+            Log in
+          </Button>
+          <Button
+            onClick={() => {
+              setAuthMode('signup')
+              setAuthOpen(true)
+            }}
+          >
+            Sign up
+          </Button>
+        </ButtonGroup>
+        <AuthModal
+          open={authOpen}
+          mode={authMode}
+          onModeChange={setAuthMode}
+          onClose={() => setAuthOpen(false)}
+        />
+      </VStack>
+    )
   }
 
   return (
@@ -226,9 +317,30 @@ const Plans = () => {
           </Grid>
         </form>
 
+        {actionError && <Text color='red.500'>{actionError}</Text>}
+
         {/* Display trips */}
         <Box pt={4}>
-          {plans.length > 0 ? (
+          {plansLoading ? (
+            <Center py={10}>
+              <Spinner />
+            </Center>
+          ) : plansError ? (
+            <Box
+              borderWidth='1px'
+              borderRadius='lg'
+              p={8}
+              textAlign='center'
+              bg='white'
+            >
+              <Text color='red.500'>Could not load your trips.</Text>
+              <Text color='gray.500' fontSize='sm' mt={1}>
+                {plansError.code === 'permission-denied'
+                  ? 'Firestore security rules are blocking trips. See firestore.rules in the repo.'
+                  : 'Check your connection and refresh the page.'}
+              </Text>
+            </Box>
+          ) : plans.length > 0 ? (
             <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} gap={6}>
               {plans.map((plan) => (
                 <Box
@@ -255,12 +367,22 @@ const Plans = () => {
 
                     <Text>Return Date: {formatPlanDate(plan.returnDate)}</Text>
 
-                    <Text fontSize='sm' color='gray.500'>
-                      {plan.activities?.length || 0}{' '}
-                      {(plan.activities?.length || 0) === 1
-                        ? 'activity'
-                        : 'activities'}
-                    </Text>
+                    <HStack justify='space-between'>
+                      <Text fontSize='sm' color='gray.500'>
+                        {plan.activities?.length || 0}{' '}
+                        {(plan.activities?.length || 0) === 1
+                          ? 'activity'
+                          : 'activities'}
+                      </Text>
+                      <HStack gap={2}>
+                        {(plan.memberIds?.length ?? 1) > 1 && (
+                          <Badge borderRadius='full' colorPalette='blue'>
+                            Shared
+                          </Badge>
+                        )}
+                        <MemberAvatars plan={plan} />
+                      </HStack>
+                    </HStack>
                   </VStack>
                 </Box>
               ))}
@@ -287,6 +409,7 @@ const Plans = () => {
         }}
         placement='center'
         motionPreset='slide-in-bottom'
+        scrollBehavior='inside'
       >
         <Portal>
           <Dialog.Backdrop />
@@ -364,19 +487,12 @@ const Plans = () => {
                           </Text>
                         )}
                       </Box>
-
-                      <Box>
-                        <Text fontSize='sm' fontWeight='medium'>
-                          Friends
-                        </Text>
-
-                        <Text color='gray.500'>
-                          {selectedPlan.friends?.length
-                            ? selectedPlan.friends.join(', ')
-                            : 'No friends added'}
-                        </Text>
-                      </Box>
                     </SimpleGrid>
+
+                    {/* Friends on this trip + sharing */}
+                    <Box borderWidth='1px' borderRadius='lg' p={4}>
+                      <TripMembers plan={selectedPlan} />
+                    </Box>
 
                     {/* Activities */}
                     <Box>
@@ -459,13 +575,23 @@ const Plans = () => {
                   </Button>
                 )}
 
-                {!edit && (
+                {!edit && isOwner && (
                   <Button
                     colorPalette='red'
                     variant='outline'
                     onClick={handleDelete}
                   >
                     Delete
+                  </Button>
+                )}
+
+                {!edit && !isOwner && (
+                  <Button
+                    colorPalette='red'
+                    variant='outline'
+                    onClick={handleLeave}
+                  >
+                    Leave trip
                   </Button>
                 )}
 

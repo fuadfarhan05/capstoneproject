@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Firestore security rules for Triply.
+// Deploy: Firebase console -> Firestore Database -> Rules -> paste -> Publish
+//   (or `firebase deploy --only firestore:rules` with the Firebase CLI).
+// Publishing REPLACES the rules in the console, so merge in any other
+// collections your project uses first.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Saved events: users/{uid}/savedEvents/{eventId} (Frontend/src/savedEvents.js)
+    match /users/{uid}/savedEvents/{eventId} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Email -> public profile, used to add friends to trips (Frontend/src/userLookup.js).
+    // Anyone signed in can fetch one entry by exact email, but nobody can list them.
+    match /userLookup/{email} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.auth.token.email != null
+        && email == request.auth.token.email.lower();
+      allow delete: if false;
+    }
+
+    // Trips: plans/{planId} (Frontend/src/plans.js)
+    match /plans/{planId} {
+      function isMember() {
+        return signedIn() && request.auth.uid in resource.data.memberIds;
+      }
+
+      function changedKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+
+      allow read: if isMember();
+
+      // You create trips for yourself, as the only member
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid];
+
+      // Members can edit details/activities, add or remove people, and leave,
+      // but can't change who owns the trip or its invite code
+      allow update: if isMember()
+        && !changedKeys().hasAny(['ownerId', 'inviteCode', 'createdAt']);
+
+      // Invite links: a non-member may add only themselves, and only by
+      // sending the trip's secret inviteCode
+      allow update: if signedIn()
+        && !(request.auth.uid in resource.data.memberIds)
+        && changedKeys().hasOnly(['memberIds', 'members'])
+        && request.resource.data.memberIds.toSet()
+             == resource.data.memberIds.toSet().union([request.auth.uid].toSet())
+        && request.resource.data.members.diff(resource.data.members)
+             .affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.members[request.auth.uid].inviteCode
+             == resource.data.inviteCode;
+
+      // Only the organizer can delete the trip for everyone
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
