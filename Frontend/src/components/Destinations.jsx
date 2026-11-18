@@ -20,7 +20,7 @@ const Destinations = ({ value, onChange, edit }) => {
       <Select.HiddenSelect />
       {!edit && <Heading>Destination</Heading>}
       <Select.Control>
-        <Select.Trigger borderRadius={'full'}>
+        <Select.Trigger borderRadius={'full'} bg='white'>
           <Select.ValueText placeholder='Where are we going?' />
         </Select.Trigger>
         <Select.IndicatorGroup>

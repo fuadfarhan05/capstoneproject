@@ -7,6 +7,7 @@ from app.models.city import CityListResponse
 router = APIRouter(tags=["events"])
 
 
+# Returns one filtered, optionally sorted page with pagination metadata.
 @router.get("/events", response_model=EventListResponse)
 def list_events(
     city: str | None = None,
@@ -17,19 +18,19 @@ def list_events(
     source: str = "sample",
     page: int = Query(default=0, ge=0),
     size: int = Query(default=20, ge=1, le=200),
+    sort: str | None = None,
 ):
-    return {
-        "events": filter_events(
-            city=city,
-            category=category,
-            query=query,
-            start_date=start_date,
-            end_date=end_date,
-            source=source,
-            page=page,
-            size=size,
-        )
-    }
+    return filter_events(
+        city=city,
+        category=category,
+        query=query,
+        start_date=start_date,
+        end_date=end_date,
+        source=source,
+        page=page,
+        size=size,
+        sort=sort,
+    )
 
 
 @router.get("/cities", response_model=CityListResponse)
@@ -37,9 +38,13 @@ def list_cities():
     return {"cities": get_cities()}
 
 
+# Returns one normalized Ticketmaster or sample event by string ID.
 @router.get("/events/{event_id}", response_model=Event)
-def get_event(event_id: int):
-    event = get_event_by_id(event_id)
+def get_event(
+    event_id: str,
+    source: str = "ticketmaster",
+):
+    event = get_event_by_id(event_id, source=source)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
 

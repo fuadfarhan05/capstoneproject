@@ -1,9 +1,15 @@
+from urllib.parse import quote
+
 import httpx
 
 from app.core.config import settings
 
 TICKETMASTER_SEARCH_URL = (
     "https://app.ticketmaster.com/discovery/v2/events.json"
+)
+
+TICKETMASTER_EVENT_URL = (
+    "https://app.ticketmaster.com/discovery/v2/events/{event_id}.json"
 )
 
 
@@ -13,6 +19,10 @@ class TicketmasterConfigurationError(RuntimeError):
 
 class TicketmasterRequestError(RuntimeError):
     """Raised when a Ticketmaster HTTP request fails."""
+
+
+class TicketmasterNotFoundError(TicketmasterRequestError):
+    """Raised when Ticketmaster does not contain the requested event."""
 
 
 class TicketmasterTimeoutError(TicketmasterRequestError):
@@ -28,6 +38,7 @@ def build_ticketmaster_search_params(
     end_date: str | None = None,
     page: int | None = None,
     size: int | None = None,
+    sort: str | None = None,
 ) -> dict:
     api_key = settings.ticketmaster_api_key
 
@@ -58,6 +69,9 @@ def build_ticketmaster_search_params(
 
     if size is not None:
         params["size"] = size
+
+    if sort == "date":
+        params["sort"] = "date,asc"
 
     return params
 
@@ -173,7 +187,7 @@ def normalize_ticketmaster_response(
     ]
 
 
-# Requests Ticketmaster events and returns them in our normalized event format.
+# Requests one Ticketmaster page with optional provider-side date sorting.
 def get_ticketmaster_events(
     city: str | None = None,
     category: str | None = None,
@@ -182,7 +196,8 @@ def get_ticketmaster_events(
     end_date: str | None = None,
     page: int | None = None,
     size: int | None = None,
-) -> list[dict]:
+    sort: str | None = None,
+) -> dict:
     params = build_ticketmaster_search_params(
         city=city,
         category=category,
@@ -191,6 +206,7 @@ def get_ticketmaster_events(
         end_date=end_date,
         page=page,
         size=size,
+        sort=sort,
     )
 
     try:
@@ -209,4 +225,73 @@ def get_ticketmaster_events(
             "Ticketmaster request failed"
         ) from exc
 
-    return normalize_ticketmaster_response(response.json(), city=city or "")
+
+    response_data = response.json()
+    events = normalize_ticketmaster_response(
+        response_data,
+        city=city or "",
+    )
+
+    page_data = response_data.get("page") or {}
+    requested_page = page if page is not None else 0
+    requested_size = size if size is not None else 20
+
+    current_page = page_data.get("number", requested_page)
+    page_size = page_data.get("size", requested_size)
+    total_pages = page_data.get("totalPages")
+    total_elements = page_data.get("totalElements")
+
+    if total_pages is not None:
+        has_next = current_page + 1 < total_pages
+    else:
+        has_next = len(events) == page_size
+
+    return {
+        "events": events,
+        "page": current_page,
+        "size": page_size,
+        "total_pages": total_pages,
+        "total_elements": total_elements,
+        "has_next": has_next,
+    }
+
+
+# Fetches and normalizes one Ticketmaster event by its ID.
+def get_ticketmaster_event(
+    event_id: str,
+) -> dict:
+    params = build_ticketmaster_search_params()
+    safe_event_id = quote(event_id, safe="")
+    event_url = TICKETMASTER_EVENT_URL.format(
+        event_id=safe_event_id,
+    )
+
+    try:
+        response = httpx.get(
+            event_url,
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+    except httpx.TimeoutException as exc:
+        raise TicketmasterTimeoutError(
+            "Ticketmaster request timed out"
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise TicketmasterNotFoundError(
+                "Ticketmaster event was not found"
+            ) from exc
+
+        raise TicketmasterRequestError(
+            "Ticketmaster request failed"
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise TicketmasterRequestError(
+            "Ticketmaster request failed"
+        ) from exc
+
+    return normalize_ticketmaster_event(
+        response.json(),
+        city="",
+    )
