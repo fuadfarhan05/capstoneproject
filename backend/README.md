@@ -173,9 +173,11 @@ Current committed example:
 ```text
 EVENTBRITE_API_TOKEN=
 TICKETMASTER_API_KEY=
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://capstoneproject-murex.vercel.app
 ```
 
 ## Deployment
 
 The backend is planned for Railway. CORS should allow the local frontend during development and the deployed Vercel frontend in production.
+
+The deployed frontend is `https://capstoneproject-murex.vercel.app`. It is included in the default `ALLOWED_ORIGINS`; if you set `ALLOWED_ORIGINS` on Railway, it must include this URL (no trailing slash).
