@@ -5,8 +5,10 @@ from fastapi import HTTPException
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
+    EventbriteQuotaError,
     EventbriteRequestError,
     EventbriteTimeoutError,
+    EventbriteValidationError,
     get_eventbrite_events,
 )
 from app.providers.ticketmaster_provider import (
@@ -142,17 +144,30 @@ def filter_events(
 
     if source == "eventbrite":
         try:
-            eventbrite_events = get_eventbrite_events(
+            return get_eventbrite_events(
                 city=city,
                 category=category,
                 query=query,
                 start_date=start_date,
                 end_date=end_date,
+                page=page,
+                size=size,
+                sort=sort,
             )
+        except EventbriteValidationError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=str(exc),
+            ) from exc
         except EventbriteConfigurationError as exc:
             raise HTTPException(
                 status_code=503,
                 detail="Eventbrite is not configured",
+            ) from exc
+        except EventbriteQuotaError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Eventbrite search quota is unavailable",
             ) from exc
         except EventbriteTimeoutError as exc:
             raise HTTPException(
@@ -164,18 +179,6 @@ def filter_events(
                 status_code=502,
                 detail="Eventbrite request failed",
             ) from exc
-
-        sorted_eventbrite_events = (
-            _sort_events_by_date(eventbrite_events)
-            if sort == "date"
-            else eventbrite_events
-        )
-
-        return _build_local_event_page(
-            sorted_eventbrite_events,
-            page,
-            size,
-        )
 
     filtered_events = get_sample_events()
 

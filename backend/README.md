@@ -32,6 +32,7 @@ route -> service -> provider -> response
 - `app/services/event_service.py` selects the requested provider and translates provider failures into clean API errors.
 - `app/providers/sample_provider.py` supplies static data for local development and testing.
 - `app/providers/ticketmaster_provider.py` requests live Ticketmaster data and converts it into the app's event format.
+- `app/providers/eventbrite_provider.py` searches public Eventbrite listings through SerpApi and converts them into the same format.
 
 This keeps the response shape stable regardless of which event provider supplies the data.
 
@@ -78,9 +79,18 @@ GET /api/events?city=Chicago&start_date=2026-10-01&end_date=2026-10-31
 GET /api/events?source=ticketmaster&city=Chicago&category=music&query=music
 GET /api/events?source=ticketmaster&city=Chicago&page=0&size=20
 GET /api/events?source=ticketmaster&city=Chicago&sort=date&page=0&size=20
+GET /api/events?source=eventbrite&city=Chicago&category=Music&page=0&size=20
+GET /api/events?source=eventbrite&city=Chicago&sort=date&page=0&size=20
 GET /api/events/G5vYZ9abc123
 GET /api/events/1?source=sample
 ```
+
+Eventbrite list requests use SerpApi's Eventbrite search engine. They require
+`city`, use a fixed `size=20`, and require `start_date` and `end_date` together
+when a custom range is supplied. The API keeps Triply pages zero-based while
+mapping them to SerpApi's one-based pages. SerpApi does not expose reliable
+result totals, so Eventbrite responses return `null` for `total_pages` and
+`total_elements`; `has_next` is derived from the provider's next-page link.
 
 Ticketmaster detail requests accept alphanumeric event IDs and return the same
 normalized `Event` shape used by event searches. A missing event returns `404`.
@@ -89,7 +99,7 @@ Missing Ticketmaster configuration returns `503`, provider timeouts return
 
 ## Provider Direction
 
-Sample data remains the default provider so the backend works without external credentials. Ticketmaster is the live provider and can be selected with `source=ticketmaster`. Eventbrite groundwork remains in the project but is not the primary live provider.
+Sample data remains the default provider so the backend works without external credentials. Ticketmaster is the primary live provider and can be selected with `source=ticketmaster`. Public Eventbrite listings can be selected with `source=eventbrite` when `SERPAPI_API_KEY` is configured.
 
 The backend should keep provider-specific logic isolated so the app can later support multiple providers without changing the frontend contract.
 
@@ -110,6 +120,10 @@ app/
 ```
 
 `ticketmaster_provider.py` translates the app's filters into Ticketmaster query parameters, makes the HTTP request, and normalizes Ticketmaster's nested response into the app's `Event` model.
+
+`eventbrite_provider.py` translates the same filters into SerpApi's Eventbrite
+search parameters, maps provider-side sorting and pagination, normalizes public
+Eventbrite results, and briefly caches identical searches to protect quota.
 
 ## API Responsibilities
 
@@ -159,19 +173,22 @@ deployment environment variables take priority over values in `.env`. The real
 `.env` file should stay local and is ignored by Git.
 
 ```text
-EVENTBRITE_API_TOKEN=
+SERPAPI_API_KEY=
 TICKETMASTER_API_KEY=
 FIREBASE_PROJECT_ID=
 FIREBASE_CREDENTIALS=
 ALLOWED_ORIGINS=
 ```
 
-`TICKETMASTER_API_KEY` is required only for requests using `source=ticketmaster`. Requests using the default `source=sample` do not require an external API key.
+`TICKETMASTER_API_KEY` is required for `source=ticketmaster` and
+`SERPAPI_API_KEY` is required for `source=eventbrite`. Requests using the
+default `source=sample` do not require an external API key. Provider keys must
+remain on the backend and must never be added to frontend environment files.
 
 Current committed example:
 
 ```text
-EVENTBRITE_API_TOKEN=
+SERPAPI_API_KEY=
 TICKETMASTER_API_KEY=
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```

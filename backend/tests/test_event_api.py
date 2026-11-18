@@ -1,7 +1,11 @@
 from fastapi.testclient import TestClient
-import httpx
 from unittest.mock import patch
 from app.core.config import settings
+from app.providers.eventbrite_provider import (
+    EventbriteQuotaError,
+    EventbriteRequestError,
+    EventbriteTimeoutError,
+)
 from app.providers.sample_provider import SAMPLE_EVENTS
 from app.providers.ticketmaster_provider import (
     TicketmasterConfigurationError,
@@ -321,84 +325,170 @@ def test_sample_events_without_sort_preserve_provider_order():
     assert [event["id"] for event in response.json()["events"]] == [5, 1, 6]
 
 
-def test_events_eventbrite_source_requires_token():
-    original_token = settings.eventbrite_api_token
-    settings.eventbrite_api_token = None
+# Verifies missing SerpApi configuration becomes the shared 503 response.
+def test_events_eventbrite_source_requires_serpapi_key(monkeypatch):
+    monkeypatch.setattr(settings, "serpapi_api_key", None)
 
-    try:
-        response = client.get("/api/events?source=eventbrite")
+    response = client.get(
+        "/api/events?source=eventbrite&city=Chicago"
+    )
 
-        assert response.status_code == 503
-        assert response.json() == {"detail": "Eventbrite is not configured"}
-    finally:
-        settings.eventbrite_api_token = original_token
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Eventbrite is not configured"}
 
 
-# Verifies that Eventbrite results are sorted before local pagination.
-def test_eventbrite_events_sort_before_pagination():
-    unsorted_events = [
-        {**SAMPLE_EVENTS[index], "source": "eventbrite"}
-        for index in [4, 0, 5, 1]
-    ]
+# Verifies Eventbrite provider pagination and sorting receive API parameters.
+def test_eventbrite_events_forward_filters_and_pagination():
+    eventbrite_page = {
+        "events": [],
+        "page": 2,
+        "size": 20,
+        "total_pages": None,
+        "total_elements": None,
+        "has_next": True,
+    }
 
     with patch(
         "app.services.event_service.get_eventbrite_events",
-        return_value=unsorted_events,
-    ):
+        return_value=eventbrite_page,
+    ) as mock_get_events:
         response = client.get(
-            "/api/events?source=eventbrite&sort=date&page=0&size=2"
+            "/api/events?source=eventbrite&city=Chicago"
+            "&category=Music&query=workshop&sort=date&page=2&size=20"
+            "&start_date=2026-11-20&end_date=2026-11-30"
         )
 
     assert response.status_code == 200
-    data = response.json()
-    assert [event["id"] for event in data["events"]] == [1, 2]
-    assert data["total_elements"] == 4
-    assert data["total_pages"] == 2
-    assert data["has_next"] is True
-
-
-def test_eventbrite_invalid_start_date_returns_400():
-    original_token = settings.eventbrite_api_token
-    settings.eventbrite_api_token = None
-
-    try:
-        response = client.get(
-            "/api/events?source=eventbrite&start_date=bad-date"
-        )
-
-        assert response.status_code == 400
-        assert (
-            response.json()["detail"]
-            == "start_date must use YYYY-MM-DD format"
-        )
-    finally:
-        settings.eventbrite_api_token = original_token
-
-def test_eventbrite_timeout_returns_504(): #gives fake token so execution doesnt stop on missing token
-    original_token = settings.eventbrite_api_token
-    settings.eventbrite_api_token = "fake-token"
-
-    eventbrite_request = httpx.Request(
-        "GET",
-        "https://www.eventbriteapi.com/v3/events/search/",
+    assert response.json() == eventbrite_page
+    mock_get_events.assert_called_once_with(
+        city="Chicago",
+        category="Music",
+        query="workshop",
+        start_date="2026-11-20",
+        end_date="2026-11-30",
+        page=2,
+        size=20,
+        sort="date",
     )
 
-    try:
-        with patch(
-            "app.providers.eventbrite_provider.httpx.get",
-            side_effect=httpx.TimeoutException(
-                "Eventbrite timed out",
-                request=eventbrite_request,
-            ),
-        ):
-            response = client.get("/api/events?source=eventbrite")
 
-        assert response.status_code == 504
-        assert response.json() == {
-            "detail": "Eventbrite request timed out"
-        }
-    finally:
-        settings.eventbrite_api_token = original_token
+# Verifies Eventbrite searches return a clear error when city is omitted.
+def test_eventbrite_requires_city(monkeypatch):
+    monkeypatch.setattr(settings, "serpapi_api_key", "fake-serpapi-key")
+
+    response = client.get("/api/events?source=eventbrite")
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": "city is required for Eventbrite searches"
+    }
+
+
+# Verifies Eventbrite rejects page sizes its upstream API cannot represent.
+def test_eventbrite_requires_size_twenty(monkeypatch):
+    monkeypatch.setattr(settings, "serpapi_api_key", "fake-serpapi-key")
+
+    response = client.get(
+        "/api/events?source=eventbrite&city=Chicago&size=10"
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": "Eventbrite searches require size=20"
+    }
+
+
+# Verifies Eventbrite custom ranges require both start and end dates.
+def test_eventbrite_requires_complete_date_range(monkeypatch):
+    monkeypatch.setattr(settings, "serpapi_api_key", "fake-serpapi-key")
+
+    response = client.get(
+        "/api/events?source=eventbrite&city=Chicago"
+        "&start_date=2026-11-20"
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": (
+            "Eventbrite searches require start_date and end_date together"
+        )
+    }
+
+
+# Verifies unsupported Eventbrite category values return a public 400 error.
+def test_eventbrite_rejects_unknown_category(monkeypatch):
+    monkeypatch.setattr(settings, "serpapi_api_key", "fake-serpapi-key")
+
+    response = client.get(
+        "/api/events?source=eventbrite&city=Chicago&category=Unknown"
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": "unsupported Eventbrite category"
+    }
+
+
+# Verifies invalid date syntax is rejected before provider configuration.
+def test_eventbrite_invalid_start_date_returns_400():
+    response = client.get(
+        "/api/events?source=eventbrite&city=Chicago"
+        "&start_date=bad-date"
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "start_date must use YYYY-MM-DD format"
+    )
+
+
+# Verifies Eventbrite search quota exhaustion becomes a 503 response.
+def test_eventbrite_quota_error_returns_503():
+    with patch(
+        "app.services.event_service.get_eventbrite_events",
+        side_effect=EventbriteQuotaError("quota unavailable"),
+    ):
+        response = client.get(
+            "/api/events?source=eventbrite&city=Chicago"
+        )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Eventbrite search quota is unavailable"
+    }
+
+
+# Verifies Eventbrite provider timeouts become a 504 response.
+def test_eventbrite_timeout_returns_504():
+    with patch(
+        "app.services.event_service.get_eventbrite_events",
+        side_effect=EventbriteTimeoutError("request timed out"),
+    ):
+        response = client.get(
+            "/api/events?source=eventbrite&city=Chicago"
+        )
+
+    assert response.status_code == 504
+    assert response.json() == {
+        "detail": "Eventbrite request timed out"
+    }
+
+
+# Verifies other Eventbrite upstream failures become a 502 response.
+def test_eventbrite_request_error_returns_502():
+    with patch(
+        "app.services.event_service.get_eventbrite_events",
+        side_effect=EventbriteRequestError("request failed"),
+    ):
+        response = client.get(
+            "/api/events?source=eventbrite&city=Chicago"
+        )
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "detail": "Eventbrite request failed"
+    }
 
 
 # Verifies normalized Ticketmaster events and page metadata through the API.
