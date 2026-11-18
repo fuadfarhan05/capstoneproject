@@ -7,6 +7,7 @@ from app.models.city import CityListResponse
 router = APIRouter(tags=["events"])
 
 
+# Returns one filtered, optionally sorted page with pagination metadata.
 @router.get("/events", response_model=EventListResponse)
 def list_events(
     city: str | None = None,
@@ -17,7 +18,8 @@ def list_events(
     source: str = "sample",
     page: int = Query(default=0, ge=0),
     size: int = Query(default=20, ge=1, le=200),
-):  # Returns one filtered page of events with pagination metadata.
+    sort: str | None = None,
+):
     return filter_events(
         city=city,
         category=category,
@@ -27,6 +29,7 @@ def list_events(
         source=source,
         page=page,
         size=size,
+        sort=sort,
     )
 
 

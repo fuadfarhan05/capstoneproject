@@ -58,6 +58,7 @@ end_date
 source
 page        zero-based page number; defaults to 0
 size        events per page; defaults to 20; maximum 200
+sort        date for soonest-first ordering; omit for provider relevance
 ```
 
 `GET /api/events/{event_id}` accepts an optional `source` query parameter:
@@ -76,6 +77,7 @@ GET /api/events?start_date=2026-10-09&end_date=2026-10-12
 GET /api/events?city=Chicago&start_date=2026-10-01&end_date=2026-10-31
 GET /api/events?source=ticketmaster&city=Chicago&category=music&query=music
 GET /api/events?source=ticketmaster&city=Chicago&page=0&size=20
+GET /api/events?source=ticketmaster&city=Chicago&sort=date&page=0&size=20
 GET /api/events/G5vYZ9abc123
 GET /api/events/1?source=sample
 ```
