@@ -29,6 +29,13 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Missing authentication token", headers=headers)
     _init_firebase()
     try:
-        return auth.verify_id_token(creds.credentials)
+        decoded = auth.verify_id_token(creds.credentials)
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token", headers=headers)
+
+    # Off by default. Set REQUIRE_VERIFIED_EMAIL=true to block accounts
+    # whose email has not been verified yet.
+    if os.environ.get("REQUIRE_VERIFIED_EMAIL", "").lower() == "true" and not decoded.get("email_verified"):
+        raise HTTPException(status_code=403, detail="Email not verified")
+
+    return decoded
