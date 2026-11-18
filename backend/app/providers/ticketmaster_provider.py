@@ -38,6 +38,7 @@ def build_ticketmaster_search_params(
     end_date: str | None = None,
     page: int | None = None,
     size: int | None = None,
+    sort: str | None = None,
 ) -> dict:
     api_key = settings.ticketmaster_api_key
 
@@ -68,6 +69,9 @@ def build_ticketmaster_search_params(
 
     if size is not None:
         params["size"] = size
+
+    if sort == "date":
+        params["sort"] = "date,asc"
 
     return params
 
@@ -183,7 +187,7 @@ def normalize_ticketmaster_response(
     ]
 
 
-# Requests Ticketmaster events and returns them in our normalized event format.
+# Requests one Ticketmaster page with optional provider-side date sorting.
 def get_ticketmaster_events(
     city: str | None = None,
     category: str | None = None,
@@ -192,7 +196,8 @@ def get_ticketmaster_events(
     end_date: str | None = None,
     page: int | None = None,
     size: int | None = None,
-) -> dict:  # Fetches one Ticketmaster page with normalized pagination metadata.
+    sort: str | None = None,
+) -> dict:
     params = build_ticketmaster_search_params(
         city=city,
         category=category,
@@ -201,6 +206,7 @@ def get_ticketmaster_events(
         end_date=end_date,
         page=page,
         size=size,
+        sort=sort,
     )
 
     try:

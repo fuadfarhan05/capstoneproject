@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 import httpx
 from unittest.mock import patch
 from app.core.config import settings
+from app.providers.sample_provider import SAMPLE_EVENTS
 from app.providers.ticketmaster_provider import (
     TicketmasterConfigurationError,
     TicketmasterNotFoundError,
@@ -259,6 +260,67 @@ def test_events_invalid_source_returns_400():
     )
 
 
+# Verifies that unsupported global sort modes return the public API error.
+def test_events_invalid_sort_returns_400():
+    response = client.get("/api/events?sort=price")
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "sort must be 'date'"}
+
+
+# Verifies that sample events are sorted globally before page slicing.
+def test_sample_events_sort_dates_across_page_boundaries():
+    unsorted_events = [
+        SAMPLE_EVENTS[index].copy()
+        for index in [4, 0, 5, 1, 3, 2]
+    ]
+
+    with patch(
+        "app.services.event_service.get_sample_events",
+        return_value=unsorted_events,
+    ):
+        first_response = client.get(
+            "/api/events?source=sample&sort=date&page=0&size=3"
+        )
+        second_response = client.get(
+            "/api/events?source=sample&sort=date&page=1&size=3"
+        )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+    first_page = first_response.json()
+    second_page = second_response.json()
+    dates = [
+        event["date"]
+        for event in first_page["events"] + second_page["events"]
+    ]
+
+    assert dates == sorted(dates)
+    assert first_page["events"][-1]["date"] <= second_page["events"][0]["date"]
+    assert first_page["total_elements"] == 6
+    assert first_page["total_pages"] == 2
+    assert first_page["has_next"] is True
+    assert second_page["has_next"] is False
+
+
+# Verifies that omitting sort preserves the sample provider's original order.
+def test_sample_events_without_sort_preserve_provider_order():
+    unsorted_events = [
+        SAMPLE_EVENTS[index].copy()
+        for index in [4, 0, 5]
+    ]
+
+    with patch(
+        "app.services.event_service.get_sample_events",
+        return_value=unsorted_events,
+    ):
+        response = client.get("/api/events?source=sample")
+
+    assert response.status_code == 200
+    assert [event["id"] for event in response.json()["events"]] == [5, 1, 6]
+
+
 def test_events_eventbrite_source_requires_token():
     original_token = settings.eventbrite_api_token
     settings.eventbrite_api_token = None
@@ -270,6 +332,30 @@ def test_events_eventbrite_source_requires_token():
         assert response.json() == {"detail": "Eventbrite is not configured"}
     finally:
         settings.eventbrite_api_token = original_token
+
+
+# Verifies that Eventbrite results are sorted before local pagination.
+def test_eventbrite_events_sort_before_pagination():
+    unsorted_events = [
+        {**SAMPLE_EVENTS[index], "source": "eventbrite"}
+        for index in [4, 0, 5, 1]
+    ]
+
+    with patch(
+        "app.services.event_service.get_eventbrite_events",
+        return_value=unsorted_events,
+    ):
+        response = client.get(
+            "/api/events?source=eventbrite&sort=date&page=0&size=2"
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert [event["id"] for event in data["events"]] == [1, 2]
+    assert data["total_elements"] == 4
+    assert data["total_pages"] == 2
+    assert data["has_next"] is True
+
 
 def test_eventbrite_invalid_start_date_returns_400():
     original_token = settings.eventbrite_api_token
@@ -315,8 +401,8 @@ def test_eventbrite_timeout_returns_504(): #gives fake token so execution doesnt
         settings.eventbrite_api_token = original_token
 
 
-# Verifies that the Ticketmaster source returns normalized events through the API.
-def test_events_ticketmaster_source_returns_events():  # Verifies normalized Ticketmaster events and page metadata.
+# Verifies normalized Ticketmaster events and page metadata through the API.
+def test_events_ticketmaster_source_returns_events():
     ticketmaster_events = [
         {
             "id": "ticketmaster-123",
@@ -363,11 +449,12 @@ def test_events_ticketmaster_source_returns_events():  # Verifies normalized Tic
         end_date=None,
         page=0,
         size=20,
+        sort=None,
     )
 
 
 # Verifies that custom pagination values reach the Ticketmaster provider.
-def test_events_ticketmaster_source_passes_pagination():  # Verifies custom pagination reaches Ticketmaster.
+def test_events_ticketmaster_source_passes_pagination():
     empty_page = {
         "events": [],
         "page": 2,
@@ -395,6 +482,39 @@ def test_events_ticketmaster_source_passes_pagination():  # Verifies custom pagi
         end_date=None,
         page=2,
         size=25,
+        sort=None,
+    )
+
+
+# Verifies that the API forwards the date sort to the Ticketmaster service call.
+def test_events_ticketmaster_source_passes_date_sort():
+    empty_page = {
+        "events": [],
+        "page": 0,
+        "size": 20,
+        "total_pages": 0,
+        "total_elements": 0,
+        "has_next": False,
+    }
+
+    with patch(
+        "app.services.event_service.get_ticketmaster_events",
+        return_value=empty_page,
+    ) as mock_get_events:
+        response = client.get(
+            "/api/events?source=ticketmaster&sort=date"
+        )
+
+    assert response.status_code == 200
+    mock_get_events.assert_called_once_with(
+        city=None,
+        category=None,
+        query=None,
+        start_date=None,
+        end_date=None,
+        page=0,
+        size=20,
+        sort="date",
     )
 
 

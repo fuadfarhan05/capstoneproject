@@ -59,6 +59,15 @@ def _build_local_event_page(
     }
 
 
+# Orders dated events chronologically and places missing dates last.
+def _sort_events_by_date(events: list[dict]) -> list[dict]:
+    return sorted(
+        events,
+        key=lambda event: event.get("date") or "9999-12-31",
+    )
+
+
+# Filters, sorts, and returns one consistently paginated event page.
 def filter_events(
     city: str | None = None,
     category: str | None = None,
@@ -68,11 +77,18 @@ def filter_events(
     source: str = "sample",
     page: int = 0,
     size: int = 20,
-):  # Filters events and returns a consistently paginated API response.
+    sort: str | None = None,
+):
     if source not in {"sample", "eventbrite", "ticketmaster"}:
         raise HTTPException(
             status_code=400,
             detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
+        )
+
+    if sort not in {None, "date"}:
+        raise HTTPException(
+            status_code=400,
+            detail="sort must be 'date'",
         )
 
     parsed_start_date = (
@@ -106,6 +122,7 @@ def filter_events(
                 end_date=end_date,
                 page=page,
                 size=size,
+                sort=sort,
             )
         except TicketmasterConfigurationError as exc:
             raise HTTPException(
@@ -148,8 +165,14 @@ def filter_events(
                 detail="Eventbrite request failed",
             ) from exc
 
+        sorted_eventbrite_events = (
+            _sort_events_by_date(eventbrite_events)
+            if sort == "date"
+            else eventbrite_events
+        )
+
         return _build_local_event_page(
-            eventbrite_events,
+            sorted_eventbrite_events,
             page,
             size,
         )
@@ -187,6 +210,9 @@ def filter_events(
             event for event in filtered_events
             if date.fromisoformat(event["date"]) <= parsed_end_date
         ]
+
+    if sort == "date":
+        filtered_events = _sort_events_by_date(filtered_events)
 
     return _build_local_event_page(
         filtered_events,

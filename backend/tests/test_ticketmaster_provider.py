@@ -86,6 +86,19 @@ def test_build_ticketmaster_search_params_includes_pagination(monkeypatch):
     assert params["size"] == 25
 
 
+# Verifies that Triply's date sort maps to Ticketmaster's provider value.
+def test_build_ticketmaster_search_params_includes_date_sort(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    params = build_ticketmaster_search_params(sort="date")
+
+    assert params["sort"] == "date,asc"
+
+
 # Verifies that optional filters are omitted when the caller does not provide them.
 def test_build_ticketmaster_search_params_omits_empty_filters(
     monkeypatch,
@@ -302,10 +315,10 @@ def test_event_model_accepts_ticketmaster_string_id():
     assert event.id == "G5vYZ9abc123"
 
 
-# Verifies the outgoing HTTP request and normalization without calling Ticketmaster.
+# Verifies the sorted outgoing request, normalization, and pagination metadata.
 def test_get_ticketmaster_events_sends_request_and_normalizes_response(
     monkeypatch,
-):  # Verifies the outgoing request, normalized event, and pagination metadata.
+):
     monkeypatch.setattr(
         settings,
         "ticketmaster_api_key",
@@ -365,6 +378,7 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
             end_date="2026-10-23",
             page=2,
             size=25,
+            sort="date",
         )
 
     fake_response.raise_for_status.assert_called_once()
@@ -379,6 +393,7 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
             "endDateTime": "2026-10-23T23:59:59Z",
             "page": 2,
             "size": 25,
+            "sort": "date,asc",
         },
         timeout=10,
     )
