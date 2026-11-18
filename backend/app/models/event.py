@@ -19,3 +19,8 @@ class Event(BaseModel):
 
 class EventListResponse(BaseModel): #named response model, this way the json response isn't too vague
     events: list[Event]
+    page: int
+    size: int
+    total_pages: int | None = None
+    total_elements: int | None = None
+    has_next: bool

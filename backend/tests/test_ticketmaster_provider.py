@@ -5,11 +5,14 @@ from app.core.config import settings
 from app.models.event import Event
 from unittest.mock import Mock, patch
 from app.providers.ticketmaster_provider import (
+    TICKETMASTER_EVENT_URL,
     TICKETMASTER_SEARCH_URL,
     TicketmasterConfigurationError,
+    TicketmasterNotFoundError,
     TicketmasterRequestError,
     TicketmasterTimeoutError,
     build_ticketmaster_search_params,
+    get_ticketmaster_event,
     get_ticketmaster_events,
     normalize_ticketmaster_event,
     normalize_ticketmaster_response,
@@ -81,6 +84,19 @@ def test_build_ticketmaster_search_params_includes_pagination(monkeypatch):
 
     assert params["page"] == 2
     assert params["size"] == 25
+
+
+# Verifies that Triply's date sort maps to Ticketmaster's provider value.
+def test_build_ticketmaster_search_params_includes_date_sort(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    params = build_ticketmaster_search_params(sort="date")
+
+    assert params["sort"] == "date,asc"
 
 
 # Verifies that optional filters are omitted when the caller does not provide them.
@@ -299,7 +315,7 @@ def test_event_model_accepts_ticketmaster_string_id():
     assert event.id == "G5vYZ9abc123"
 
 
-# Verifies the outgoing HTTP request and normalization without calling Ticketmaster.
+# Verifies the sorted outgoing request, normalization, and pagination metadata.
 def test_get_ticketmaster_events_sends_request_and_normalizes_response(
     monkeypatch,
 ):
@@ -342,20 +358,27 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
                     },
                 }
             ]
-        }
+        },
+        "page": {
+            "size": 25,
+            "totalElements": 75,
+            "totalPages": 3,
+            "number": 2,
+        },
     }
 
     with patch(
         "app.providers.ticketmaster_provider.httpx.get",
         return_value=fake_response,
     ) as mock_get:
-        events = get_ticketmaster_events(
+        result = get_ticketmaster_events(
             city="Chicago",
             query="music",
             start_date="2026-10-22",
             end_date="2026-10-23",
             page=2,
             size=25,
+            sort="date",
         )
 
     fake_response.raise_for_status.assert_called_once()
@@ -370,15 +393,21 @@ def test_get_ticketmaster_events_sends_request_and_normalizes_response(
             "endDateTime": "2026-10-23T23:59:59Z",
             "page": 2,
             "size": 25,
+            "sort": "date,asc",
         },
         timeout=10,
     )
 
-    assert len(events) == 1
-    assert events[0]["id"] == "ticketmaster-789"
-    assert events[0]["title"] == "Mock Ticketmaster Event"
-    assert events[0]["city"] == "Chicago"
-    assert events[0]["source"] == "ticketmaster"
+    assert result["page"] == 2
+    assert result["size"] == 25
+    assert result["total_pages"] == 3
+    assert result["total_elements"] == 75
+    assert result["has_next"] is False
+    assert len(result["events"]) == 1
+    assert result["events"][0]["id"] == "ticketmaster-789"
+    assert result["events"][0]["title"] == "Mock Ticketmaster Event"
+    assert result["events"][0]["city"] == "Chicago"
+    assert result["events"][0]["source"] == "ticketmaster"
 
 
 # Verifies that an HTTP timeout becomes our Ticketmaster-specific timeout error.
@@ -433,3 +462,178 @@ def test_get_ticketmaster_events_raises_request_error(monkeypatch):
             match="Ticketmaster request failed",
         ):
             get_ticketmaster_events(city="Chicago")
+
+
+# Verifies that one Ticketmaster event is requested and normalized.
+def test_get_ticketmaster_event_returns_normalized_event(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    fake_response = Mock()
+    fake_response.json.return_value = {
+        "id": "event-123",
+        "name": "Chicago Concert",
+        "info": "A live concert.",
+        "dates": {
+            "start": {
+                "localDate": "2026-11-10",
+                "localTime": "19:30:00",
+            }
+        },
+        "_embedded": {
+            "venues": [
+                {
+                    "name": "Concert Hall",
+                    "city": {"name": "Chicago"},
+                }
+            ]
+        },
+    }
+
+    expected_url = TICKETMASTER_EVENT_URL.format(
+        event_id="event-123",
+    )
+
+    with patch(
+        "app.providers.ticketmaster_provider.httpx.get",
+        return_value=fake_response,
+    ) as mock_get:
+        event = get_ticketmaster_event("event-123")
+
+    fake_response.raise_for_status.assert_called_once()
+    mock_get.assert_called_once_with(
+        expected_url,
+        params={"apikey": "fake-ticketmaster-key"},
+        timeout=10,
+    )
+
+    assert event["id"] == "event-123"
+    assert event["title"] == "Chicago Concert"
+    assert event["city"] == "Chicago"
+    assert event["source"] == "ticketmaster"
+
+
+# Converts a Ticketmaster 404 into our provider-specific error.
+def test_get_ticketmaster_event_raises_not_found(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    event_url = TICKETMASTER_EVENT_URL.format(
+        event_id="missing-event",
+    )
+    request = httpx.Request("GET", event_url)
+    response = httpx.Response(
+        404,
+        request=request,
+    )
+
+    with patch(
+        "app.providers.ticketmaster_provider.httpx.get",
+        side_effect=httpx.HTTPStatusError(
+            "Event not found",
+            request=request,
+            response=response,
+        ),
+    ):
+        with pytest.raises(
+            TicketmasterNotFoundError,
+            match="Ticketmaster event was not found",
+        ):
+            get_ticketmaster_event("missing-event")
+
+
+# Converts a detail-request timeout into our timeout error.
+def test_get_ticketmaster_event_raises_timeout(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    event_url = TICKETMASTER_EVENT_URL.format(
+        event_id="event-123",
+    )
+    request = httpx.Request("GET", event_url)
+
+    with patch(
+        "app.providers.ticketmaster_provider.httpx.get",
+        side_effect=httpx.TimeoutException(
+            "Ticketmaster timed out",
+            request=request,
+        ),
+    ):
+        with pytest.raises(
+            TicketmasterTimeoutError,
+            match="Ticketmaster request timed out",
+        ):
+            get_ticketmaster_event("event-123")
+
+
+# Verifies that event IDs are safely encoded before entering the detail URL.
+def test_get_ticketmaster_event_encodes_event_id(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    fake_response = Mock()
+    fake_response.json.return_value = {
+        "id": "event/123",
+        "name": "Encoded Event",
+        "dates": {"start": {"localDate": "2026-11-12"}},
+    }
+
+    with patch(
+        "app.providers.ticketmaster_provider.httpx.get",
+        return_value=fake_response,
+    ) as mock_get:
+        get_ticketmaster_event("event/123")
+
+    expected_url = TICKETMASTER_EVENT_URL.format(
+        event_id="event%2F123",
+    )
+    mock_get.assert_called_once_with(
+        expected_url,
+        params={"apikey": "fake-ticketmaster-key"},
+        timeout=10,
+    )
+
+
+# Converts other detail-request HTTP failures into our request error.
+def test_get_ticketmaster_event_raises_request_error(monkeypatch):
+    monkeypatch.setattr(
+        settings,
+        "ticketmaster_api_key",
+        "fake-ticketmaster-key",
+    )
+
+    event_url = TICKETMASTER_EVENT_URL.format(
+        event_id="event-123",
+    )
+    request = httpx.Request("GET", event_url)
+
+    with patch(
+        "app.providers.ticketmaster_provider.httpx.get",
+        side_effect=httpx.ConnectError(
+            "Could not connect to Ticketmaster",
+            request=request,
+        ),
+    ):
+        with pytest.raises(
+            TicketmasterRequestError,
+            match="Ticketmaster request failed",
+        ):
+            get_ticketmaster_event("event-123")

@@ -14,6 +14,12 @@ import AuthModal from '../components/AuthModal'
 import AccountButtons from '../components/AccountButtons'
 import Filter from '../components/Filter'
 import { SearchBar } from '../components/index'
+import {
+  categoryOptions,
+  cityOptions,
+  emptyFilters,
+  sortOptions,
+} from '../data/filterOptions'
 
 const words = [
   'a beach',
@@ -25,13 +31,6 @@ const words = [
   'a shopping mall',
   'an amusement park',
 ]
-
-const emptyFilters = {
-  city: '',
-  distance: '',
-  price: '',
-  sort: '',
-}
 
 const LandingPage = () => {
   const navigate = useNavigate()
@@ -68,11 +67,12 @@ const LandingPage = () => {
     }
   }, [])
 
-  const setFilter = (key) => (value) =>
+  const setFilter = (key) => (value) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }))
+  }
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -167,7 +167,7 @@ const LandingPage = () => {
             <Stack direction={{ base: 'column', md: 'row' }} align='stretch'>
               <Box position='relative' flex='1'>
                 <SearchBar
-                  width='800px'
+                  width='100%'
                   color='white'
                   value={search}
                   onChange={setSearch}
@@ -224,7 +224,7 @@ const LandingPage = () => {
           </form>
         </Box>
 
-        {/* Filters - using the same Filter component as Results */}
+        {/* Filters */}
         <HStack
           justify='center'
           align='center'
@@ -241,13 +241,27 @@ const LandingPage = () => {
             Filters:
           </Text>
 
-          <Filter filter='city' onChange={setFilter('city')} />
+          <Filter
+            filter='city'
+            value={filters.city}
+            options={cityOptions}
+            onChange={setFilter('city')}
+          />
 
-          <Filter filter='distance' onChange={setFilter('distance')} />
+          <Filter
+            filter='category'
+            value={filters.category}
+            options={categoryOptions}
+            placeholder='Category'
+            onChange={setFilter('category')}
+          />
 
-          <Filter filter='price' onChange={setFilter('price')} />
-
-          <Filter filter='sort' onChange={setFilter('sort')} />
+          <Filter
+            filter='sort'
+            value={filters.sort}
+            options={sortOptions}
+            onChange={setFilter('sort')}
+          />
         </HStack>
       </VStack>
 

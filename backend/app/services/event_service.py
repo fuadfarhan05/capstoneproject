@@ -11,8 +11,10 @@ from app.providers.eventbrite_provider import (
 )
 from app.providers.ticketmaster_provider import (
     TicketmasterConfigurationError,
+    TicketmasterNotFoundError,
     TicketmasterRequestError,
     TicketmasterTimeoutError,
+    get_ticketmaster_event,
     get_ticketmaster_events,
 )
 
@@ -37,6 +39,35 @@ def _parse_date(value: str, field_name: str) -> date:
         )
 
 
+def _build_local_event_page(
+    events: list[dict],
+    page: int,
+    size: int,
+) -> dict:  # Paginates local provider results and creates API metadata.
+    total_elements = len(events)
+    total_pages = (total_elements + size - 1) // size
+    start = page * size
+    end = start + size
+
+    return {
+        "events": events[start:end],
+        "page": page,
+        "size": size,
+        "total_pages": total_pages,
+        "total_elements": total_elements,
+        "has_next": page + 1 < total_pages,
+    }
+
+
+# Orders dated events chronologically and places missing dates last.
+def _sort_events_by_date(events: list[dict]) -> list[dict]:
+    return sorted(
+        events,
+        key=lambda event: event.get("date") or "9999-12-31",
+    )
+
+
+# Filters, sorts, and returns one consistently paginated event page.
 def filter_events(
     city: str | None = None,
     category: str | None = None,
@@ -46,11 +77,18 @@ def filter_events(
     source: str = "sample",
     page: int = 0,
     size: int = 20,
+    sort: str | None = None,
 ):
     if source not in {"sample", "eventbrite", "ticketmaster"}:
         raise HTTPException(
             status_code=400,
             detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
+        )
+
+    if sort not in {None, "date"}:
+        raise HTTPException(
+            status_code=400,
+            detail="sort must be 'date'",
         )
 
     parsed_start_date = (
@@ -84,6 +122,7 @@ def filter_events(
                 end_date=end_date,
                 page=page,
                 size=size,
+                sort=sort,
             )
         except TicketmasterConfigurationError as exc:
             raise HTTPException(
@@ -103,7 +142,7 @@ def filter_events(
 
     if source == "eventbrite":
         try:
-            return get_eventbrite_events(
+            eventbrite_events = get_eventbrite_events(
                 city=city,
                 category=category,
                 query=query,
@@ -125,6 +164,18 @@ def filter_events(
                 status_code=502,
                 detail="Eventbrite request failed",
             ) from exc
+
+        sorted_eventbrite_events = (
+            _sort_events_by_date(eventbrite_events)
+            if sort == "date"
+            else eventbrite_events
+        )
+
+        return _build_local_event_page(
+            sorted_eventbrite_events,
+            page,
+            size,
+        )
 
     filtered_events = get_sample_events()
 
@@ -160,12 +211,50 @@ def filter_events(
             if date.fromisoformat(event["date"]) <= parsed_end_date
         ]
 
-    return filtered_events
+    if sort == "date":
+        filtered_events = _sort_events_by_date(filtered_events)
+
+    return _build_local_event_page(
+        filtered_events,
+        page,
+        size,
+    )
 
 
-def get_event_by_id(event_id: int):
+# Retrieves one normalized event from the requested detail provider.
+def get_event_by_id(
+    event_id: str,
+    source: str = "ticketmaster",
+):
+    if source not in {"sample", "ticketmaster"}:
+        raise HTTPException(
+            status_code=400,
+            detail="source must be 'sample' or 'ticketmaster'",
+        )
+
+    if source == "ticketmaster":
+        try:
+            return get_ticketmaster_event(event_id)
+        except TicketmasterNotFoundError:
+            return None
+        except TicketmasterConfigurationError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Ticketmaster is not configured",
+            ) from exc
+        except TicketmasterTimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail="Ticketmaster request timed out",
+            ) from exc
+        except TicketmasterRequestError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Ticketmaster request failed",
+            ) from exc
+
     for event in get_sample_events():
-        if event["id"] == event_id:
+        if str(event["id"]) == event_id:
             return event
 
     return None

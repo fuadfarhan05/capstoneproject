@@ -35,19 +35,32 @@ const filters = {
   sort: { placeholder: 'Sort by', options: sortOptions },
 }
 
-const Filter = ({ filter, onChange }) => {
-  const [value, setValue] = useState('')
+const emptyOptions = []
 
-  const { placeholder, options } = filters[filter]
+const Filter = ({
+  filter,
+  onChange,
+  value: controlledValue,
+  options: providedOptions,
+  placeholder: providedPlaceholder,
+}) => {  // Renders either a controlled event filter or a legacy standalone filter.
+  const [internalValue, setInternalValue] = useState('')
+
+  const fallback = filters[filter] ?? {}
+  const placeholder = providedPlaceholder ?? fallback.placeholder ?? 'Filter'
+  const options = providedOptions ?? fallback.options ?? emptyOptions
+  const value = controlledValue ?? internalValue
 
   const collection = useMemo(
     () => createListCollection({ items: options }),
     [options]
   )
 
-  const handleChange = (details) => {
+  const handleChange = (details) => {  // Sends the selected value to the page that owns the filters.
     const selectedValue = details.value[0] ?? ''
-    setValue(selectedValue)
+    if (controlledValue === undefined) {
+      setInternalValue(selectedValue)
+    }
     onChange(selectedValue)
   }
 

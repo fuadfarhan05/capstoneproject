@@ -16,20 +16,19 @@ import { motion } from 'motion/react'
 import { MainBg, NewYorkBg, ChicagoBg, SanFrancisco } from '../assets/index'
 import { MapPin } from 'lucide-react'
 import { SearchBar } from '../components/index'
-
-const emptyFilters = {
-  city: '',
-  distance: '',
-  price: '',
-  sort: '',
-}
+import {
+  categoryOptions,
+  cityOptions,
+  emptyFilters,
+  sortOptions,
+} from '../data/filterOptions'
 
 const layoutTransition = {
   duration: 0.55,
   ease: [0.22, 1, 0.36, 1],
 }
 
-const Results = () => {
+const Results = () => {  // Displays live events using the search and supported Ticketmaster filters.
   const location = useLocation()
 
   const query = location.state?.query || ''
@@ -50,13 +49,13 @@ const Results = () => {
   const [pin, setPin] = useState('')
   const [back, setBack] = useState(MainBg)
 
-  const setFilter = (key) => (value) =>
+  const setFilter = (key) => (value) =>  // Updates one filter while preserving the rest.
     setFilters((prev) => ({
       ...prev,
       [key]: value,
     }))
 
-  const handleSearch = (e) => {
+  const handleSearch = (e) => {  // Submits a new keyword search without reloading the browser.
     e.preventDefault()
 
     const newQuery = search.trim()
@@ -66,17 +65,24 @@ const Results = () => {
     setSubmittedQuery(newQuery)
   }
 
-  const pinVal = (city) => {
-    if (city === 'new-york-city') {
-      setPin('New York City')
+  const pinVal = (city) => {  // Updates the location label and matching city artwork.
+    setPin(city === 'New York' ? 'New York City' : city)
+
+    if (city === 'New York') {
       setBack(NewYorkBg)
-    } else if (city === 'chicago') {
-      setPin('Chicago')
+    } else if (city === 'Chicago') {
       setBack(ChicagoBg)
-    } else if (city === 'san-francisco') {
-      setPin('San Francisco')
+    } else if (city === 'San Francisco') {
       setBack(SanFrancisco)
+    } else {
+      setBack(MainBg)
     }
+  }
+
+  const clearFilters = () => {  // Clears filter state and restores the default results artwork.
+    setFilters(emptyFilters)
+    setPin('')
+    setBack(MainBg)
   }
   return (
     <>
@@ -165,17 +171,28 @@ const Results = () => {
 
             <Filter
               filter='city'
+              value={filters.city}
+              options={cityOptions}
               onChange={(value) => {
                 setFilter('city')(value)
                 pinVal(value)
               }}
             />
 
-            <Filter filter='distance' onChange={setFilter('distance')} />
+            <Filter
+              filter='category'
+              value={filters.category}
+              options={categoryOptions}
+              placeholder='Category'
+              onChange={setFilter('category')}
+            />
 
-            <Filter filter='price' onChange={setFilter('price')} />
-
-            <Filter filter='sort' onChange={setFilter('sort')} />
+            <Filter
+              filter='sort'
+              value={filters.sort}
+              options={sortOptions}
+              onChange={setFilter('sort')}
+            />
           </HStack>
         </motion.div>
 
@@ -184,7 +201,7 @@ const Results = () => {
           filters={filters}
           view={view}
           onViewChange={setView}
-          onClearFilters={() => setFilters(emptyFilters)}
+          onClearFilters={clearFilters}
           onRequireAuth={() => openAuth('login')}
         />
       </VStack>
