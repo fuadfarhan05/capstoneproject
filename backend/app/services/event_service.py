@@ -2,6 +2,7 @@ from datetime import date
 
 from fastapi import HTTPException
 
+from app.services.combined_event_service import get_combined_events
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
@@ -81,10 +82,13 @@ def filter_events(
     size: int = 20,
     sort: str | None = None,
 ):
-    if source not in {"sample", "eventbrite", "ticketmaster"}:
+    if source not in {"sample", "eventbrite", "ticketmaster", "all"}:
         raise HTTPException(
             status_code=400,
-            detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
+            detail=(
+                "source must be 'sample', 'eventbrite', 'ticketmaster', "
+                "or 'all'"
+            ),
         )
 
     if sort not in {None, "date"}:
@@ -112,6 +116,18 @@ def filter_events(
         raise HTTPException(
             status_code=400,
             detail="start_date must be before or equal to end_date",
+        )
+
+    if source == "all":
+        return get_combined_events(
+            city=city,
+            category=category,
+            query=query,
+            start_date=start_date,
+            end_date=end_date,
+            page=page,
+            size=size,
+            sort=sort,
         )
 
     if source == "ticketmaster":

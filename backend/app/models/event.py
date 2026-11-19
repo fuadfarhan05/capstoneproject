@@ -24,3 +24,4 @@ class EventListResponse(BaseModel): #named response model, this way the json res
     total_pages: int | None = None
     total_elements: int | None = None
     has_next: bool
+    warnings: list[str] | None = None

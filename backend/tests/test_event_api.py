@@ -54,6 +54,14 @@ def test_events_sample_source_uses_sample_data():
     assert all(event["source"] == "sample" for event in data["events"])
 
 
+# Verifies existing single-provider responses do not gain an empty warning field.
+def test_sample_events_omit_combined_provider_warnings():
+    response = client.get("/api/events?source=sample")
+
+    assert response.status_code == 200
+    assert "warnings" not in response.json()
+
+
 def test_sample_events_include_pagination_metadata():  # Verifies metadata on the first sample page.
     response = client.get(
         "/api/events?source=sample&page=0&size=2"
@@ -260,7 +268,43 @@ def test_events_invalid_source_returns_400():
 
     assert response.status_code == 400
     assert response.json()["detail"] == (
-        "source must be 'sample', 'eventbrite', or 'ticketmaster'"
+        "source must be 'sample', 'eventbrite', 'ticketmaster', or 'all'"
+    )
+
+
+# Verifies that combined searches forward every public filter to the aggregator.
+def test_combined_events_forward_filters_and_pagination():
+    combined_page = {
+        "events": [],
+        "page": 1,
+        "size": 20,
+        "total_pages": None,
+        "total_elements": None,
+        "has_next": True,
+        "warnings": [],
+    }
+
+    with patch(
+        "app.services.event_service.get_combined_events",
+        return_value=combined_page,
+    ) as mock_get_events:
+        response = client.get(
+            "/api/events?source=all&city=Chicago&category=Sports"
+            "&query=basketball&sort=date&page=1&size=20"
+            "&start_date=2026-11-20&end_date=2026-11-30"
+        )
+
+    assert response.status_code == 200
+    assert response.json() == combined_page
+    mock_get_events.assert_called_once_with(
+        city="Chicago",
+        category="Sports",
+        query="basketball",
+        start_date="2026-11-20",
+        end_date="2026-11-30",
+        page=1,
+        size=20,
+        sort="date",
     )
 
 
