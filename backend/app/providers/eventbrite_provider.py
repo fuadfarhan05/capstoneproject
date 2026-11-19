@@ -20,6 +20,16 @@ EVENTBRITE_CATEGORY_MAP = {
     "miscellaneous": "other",
 }
 
+EVENTBRITE_RESULT_CATEGORY_MAP = {
+    "music": "music",
+    "sports & fitness": "sports",
+    "sports and fitness": "sports",
+    "performing & visual arts": "arts & theatre",
+    "performing and visual arts": "arts & theatre",
+    "film, media & entertainment": "film",
+    "film media & entertainment": "film",
+}
+
 _eventbrite_cache: dict[tuple, tuple[float, dict]] = {}
 
 
@@ -45,6 +55,15 @@ class EventbriteTimeoutError(EventbriteRequestError):
 
 class EventbriteResponseError(EventbriteRequestError):
     """Raised when the Eventbrite search provider returns malformed data."""
+
+
+# Maps provider result labels into Triply's shared category values.
+def _normalize_eventbrite_category(category: object) -> str:
+    if not category:
+        return "unknown"
+
+    normalized = str(category).strip().lower()
+    return EVENTBRITE_RESULT_CATEGORY_MAP.get(normalized, "miscellaneous")
 
 
 # Clears cached Eventbrite pages so tests and maintenance can start fresh.
@@ -206,11 +225,8 @@ def normalize_eventbrite_event(
     if maximum_price and str(maximum_price) != pricing:
         pricing = f"{pricing} - {maximum_price}"
 
-    category = eventbrite_event.get("category")
-    normalized_category = (
-        str(category).strip().lower()
-        if category
-        else "unknown"
+    normalized_category = _normalize_eventbrite_category(
+        eventbrite_event.get("category")
     )
 
     return {

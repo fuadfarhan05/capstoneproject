@@ -210,13 +210,28 @@ def test_normalize_eventbrite_event():
         "venue": "Downtown Hall",
         "date": "2026-11-21",
         "time": "19:00",
-        "category": "business & professional",
+        "category": "miscellaneous",
         "address": "123 Main St, Chicago, IL",
         "pricing": "25.00 USD - 50.00 USD",
         "ticket_link": "https://eventbrite.com/e/sample",
         "photos": ["https://example.com/photo.jpg"],
         "source": "eventbrite",
     }
+
+
+# Verifies Eventbrite's broader sports label maps to Triply's sports category.
+def test_normalize_eventbrite_event_maps_sports_category():
+    normalized_event = normalize_eventbrite_event(
+        {
+            "event_id": "sports-123",
+            "title": "Community Run",
+            "start_date": "2026-11-22",
+            "category": "Sports & Fitness",
+        },
+        city="Chicago",
+    )
+
+    assert normalized_event["category"] == "sports"
 
 
 # Verifies missing optional fields receive safe normalized defaults.
