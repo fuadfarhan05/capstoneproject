@@ -197,6 +197,21 @@ def test_normalize_ticketmaster_event():
     }
 
 
+# Verifies provider segments outside the shared set map to miscellaneous.
+def test_normalize_ticketmaster_event_maps_other_categories():
+    normalized_event = normalize_ticketmaster_event(
+        {
+            "id": "family-123",
+            "name": "Family Festival",
+            "dates": {"start": {"localDate": "2026-12-20"}},
+            "classifications": [{"segment": {"name": "Family"}}],
+        },
+        city="Chicago",
+    )
+
+    assert normalized_event["category"] == "miscellaneous"
+
+
 # Verifies that missing optional Ticketmaster fields receive safe default values.
 def test_normalize_ticketmaster_event_handles_missing_optional_fields():
     ticketmaster_event = {

@@ -30,7 +30,7 @@ def get_allowed_origins() -> list[str]:
 
 
 class Settings:
-    eventbrite_api_token: str | None = os.getenv("EVENTBRITE_API_TOKEN")
+    serpapi_api_key: str | None = os.getenv("SERPAPI_API_KEY")
     ticketmaster_api_key: str | None = os.getenv("TICKETMASTER_API_KEY")
     allowed_origins: list[str] = get_allowed_origins()
 

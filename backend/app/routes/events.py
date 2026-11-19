@@ -8,7 +8,11 @@ router = APIRouter(tags=["events"])
 
 
 # Returns one filtered, optionally sorted page with pagination metadata.
-@router.get("/events", response_model=EventListResponse)
+@router.get(
+    "/events",
+    response_model=EventListResponse,
+    response_model_exclude_unset=True,
+)
 def list_events(
     city: str | None = None,
     category: str | None = None,

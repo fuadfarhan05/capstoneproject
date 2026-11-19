@@ -2,11 +2,14 @@ from datetime import date
 
 from fastapi import HTTPException
 
+from app.services.combined_event_service import get_combined_events
 from app.providers.sample_provider import get_sample_events
 from app.providers.eventbrite_provider import (
     EventbriteConfigurationError,
+    EventbriteQuotaError,
     EventbriteRequestError,
     EventbriteTimeoutError,
+    EventbriteValidationError,
     get_eventbrite_events,
 )
 from app.providers.ticketmaster_provider import (
@@ -79,10 +82,13 @@ def filter_events(
     size: int = 20,
     sort: str | None = None,
 ):
-    if source not in {"sample", "eventbrite", "ticketmaster"}:
+    if source not in {"sample", "eventbrite", "ticketmaster", "all"}:
         raise HTTPException(
             status_code=400,
-            detail="source must be 'sample', 'eventbrite', or 'ticketmaster'",
+            detail=(
+                "source must be 'sample', 'eventbrite', 'ticketmaster', "
+                "or 'all'"
+            ),
         )
 
     if sort not in {None, "date"}:
@@ -110,6 +116,18 @@ def filter_events(
         raise HTTPException(
             status_code=400,
             detail="start_date must be before or equal to end_date",
+        )
+
+    if source == "all":
+        return get_combined_events(
+            city=city,
+            category=category,
+            query=query,
+            start_date=start_date,
+            end_date=end_date,
+            page=page,
+            size=size,
+            sort=sort,
         )
 
     if source == "ticketmaster":
@@ -142,17 +160,30 @@ def filter_events(
 
     if source == "eventbrite":
         try:
-            eventbrite_events = get_eventbrite_events(
+            return get_eventbrite_events(
                 city=city,
                 category=category,
                 query=query,
                 start_date=start_date,
                 end_date=end_date,
+                page=page,
+                size=size,
+                sort=sort,
             )
+        except EventbriteValidationError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=str(exc),
+            ) from exc
         except EventbriteConfigurationError as exc:
             raise HTTPException(
                 status_code=503,
                 detail="Eventbrite is not configured",
+            ) from exc
+        except EventbriteQuotaError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Eventbrite search quota is unavailable",
             ) from exc
         except EventbriteTimeoutError as exc:
             raise HTTPException(
@@ -164,18 +195,6 @@ def filter_events(
                 status_code=502,
                 detail="Eventbrite request failed",
             ) from exc
-
-        sorted_eventbrite_events = (
-            _sort_events_by_date(eventbrite_events)
-            if sort == "date"
-            else eventbrite_events
-        )
-
-        return _build_local_event_page(
-            sorted_eventbrite_events,
-            page,
-            size,
-        )
 
     filtered_events = get_sample_events()
 

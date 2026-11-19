@@ -12,6 +12,14 @@ TICKETMASTER_EVENT_URL = (
     "https://app.ticketmaster.com/discovery/v2/events/{event_id}.json"
 )
 
+TICKETMASTER_CATEGORY_MAP = {
+    "music": "music",
+    "sports": "sports",
+    "arts & theatre": "arts & theatre",
+    "film": "film",
+    "miscellaneous": "miscellaneous",
+}
+
 
 class TicketmasterConfigurationError(RuntimeError):
     """Raised when Ticketmaster configuration is missing."""
@@ -27,6 +35,15 @@ class TicketmasterNotFoundError(TicketmasterRequestError):
 
 class TicketmasterTimeoutError(TicketmasterRequestError):
     """Raised when Ticketmaster does not respond before the timeout."""
+
+
+# Maps Ticketmaster segment names into Triply's shared category values.
+def _normalize_ticketmaster_category(category: object) -> str:
+    if not category:
+        return "unknown"
+
+    normalized = str(category).strip().lower()
+    return TICKETMASTER_CATEGORY_MAP.get(normalized, "miscellaneous")
 
 
 # Builds Ticketmaster query parameters from our API's search filters.
@@ -126,7 +143,7 @@ def normalize_ticketmaster_event(
         classifications[0] if classifications else {}
     )
     segment = classification.get("segment") or {}
-    category = segment.get("name", "unknown").lower()
+    category = _normalize_ticketmaster_category(segment.get("name"))
 
     price_ranges = ticketmaster_event.get("priceRanges") or []
     pricing = "unknown"

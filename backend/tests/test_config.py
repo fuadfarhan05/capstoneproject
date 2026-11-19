@@ -35,3 +35,8 @@ def test_load_backend_environment_preserves_existing_environment(
 
 def test_settings_has_ticketmaster_api_key():
     assert hasattr(settings, "ticketmaster_api_key")
+
+
+# Verifies the backend exposes the server-side SerpApi configuration field.
+def test_settings_has_serpapi_api_key():
+    assert hasattr(settings, "serpapi_api_key")
